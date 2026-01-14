@@ -1,0 +1,131 @@
+.navbar {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    background-color: #333;
+    padding: 20px 10px;
+    width: 200px;
+    min-height: 100vh;
+    color: white;
+    position: fixed;
+    top: 0;
+    left: 0;
+    box-sizing: border-box;
+
+
+    transition: width 0.3s ease;
+    z-index: 1000;
+    overflow-x: hidden;
+}
+
+.navbar.collapsed {
+    width: 70px;
+    align-items: center;
+    padding: 20px 5px;
+}
+
+
+.navbar.collapsed .nav-text {
+    display: none;
+}
+
+.navbar.collapsed .nav-icon {
+    margin-right: 0;
+    font-size: 20px;
+}
+
+
+.navbar button {
+    background-color: #333;
+    border: none;
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+    width: 100%;
+
+
+    display: flex;
+    align-items: center;
+    text-align: left;
+    white-space: nowrap;
+
+
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+
+.navbar.collapsed button {
+    justify-content: center;
+    padding: 10px 0;
+}
+
+.navbar button:hover {
+
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white;
+}
+
+.nav-icon {
+    margin-right: 12px;
+    min-width: 25px;
+    text-align: center;
+}
+
+
+.toggle-button {
+
+    width: auto !important;
+
+
+    align-self: flex-end;
+
+    margin-bottom: 20px !important;
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: #bbb !important;
+    background-color: transparent !important;
+    padding: 5px 12px !important;
+}
+
+.toggle-button:hover {
+    background-color: #555 !important;
+    color: white !important;
+    border-radius: 4px;
+}
+
+
+.navbar.collapsed .toggle-button {
+
+    align-self: center;
+    margin-bottom: 30px !important;
+}
+
+.spacer {
+    flex-grow: 1;
+}
+
+.navbar .logout-button {
+    background-color: #4CAF50 !important;
+    margin-bottom: 20px;
+}
+
+
+.navbar .name-button {
+    background-color: transparent !important;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #ddd;
+}
+
+.navbar .name-button:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+
+    color: white;
+}
+
+.navbar .logout-button:hover {
+    background-color: #388e3c !important;
+}

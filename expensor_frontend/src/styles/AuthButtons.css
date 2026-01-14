@@ -1,0 +1,26 @@
+.auth-button {
+    padding: 12px 20px;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.auth-button.login {
+    background-color: #0078d4;
+    color: white;
+}
+
+.auth-button.login:hover {
+    background-color: #005ea6;
+}
+
+.auth-button.logout {
+    background-color: #d40000;
+    color: white;
+}
+
+.auth-button.logout:hover {
+    background-color: #a60000;
+}

@@ -1,0 +1,346 @@
+:root {
+  --navbar-width: 200px;
+  --bg-light: #dbe4eb;
+  --primary-color: #3498db;
+  --success-color: #27ae60;
+  --danger-color: #e74c3c;
+  --text-dark: #2c3e50;
+  --text-light: #7f8c8d;
+}
+
+
+.group-handling-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-light);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+  display: flex;
+  overflow: hidden;
+  z-index: 100;
+
+
+  position: fixed;
+}
+
+
+.group-handling-wrapper::before {
+  content: '€';
+  position: absolute;
+  top: -80px;
+  right: -50px;
+  font-size: 400px;
+  font-weight: 900;
+  font-family: serif;
+  color: var(--primary-color);
+  opacity: 0.08;
+  transform: rotate(-20deg);
+  pointer-events: none;
+  z-index: 0;
+}
+
+
+.group-handling-wrapper::after {
+  content: '$';
+  position: absolute;
+  bottom: -50px;
+  left: 220px;
+  font-size: 300px;
+  font-weight: 900;
+  font-family: sans-serif;
+  color: #27ae60;
+  opacity: 0.08;
+  transform: rotate(15deg);
+  pointer-events: none;
+  z-index: 0;
+}
+
+
+.group-handling-content {
+  flex: 1;
+  margin-left: var(--navbar-width);
+  height: 100%;
+  padding: 30px;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow-y: auto;
+  position: relative;
+  z-index: 1;
+}
+
+
+.group-handling-title {
+  font-size: 2.5rem;
+  color: var(--text-dark);
+  margin-bottom: 10px;
+  text-align: center;
+  font-weight: 800;
+  text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.5);
+}
+
+
+.group-handling-section-title {
+  font-size: 1.8rem;
+  color: var(--text-dark);
+  margin-top: 50px;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+
+
+  text-align: center;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 800px;
+  align-self: center;
+}
+
+
+.group-handling-section-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 40px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+
+.group-handling-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+}
+
+.group-handling-card h3 {
+  margin-top: 0;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+  color: var(--text-dark);
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+
+.group-handling-col-left {
+  flex: 1;
+  min-width: 320px;
+}
+
+.group-handling-col-right {
+  flex: 2;
+  min-width: 400px;
+}
+
+
+.group-handling-form-group {
+  margin-bottom: 20px;
+}
+
+.group-handling-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 0.95rem;
+}
+
+.group-handling-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-sizing: border-box;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.group-handling-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.group-handling-save-btn {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 14px 20px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  width: 100%;
+  transition: transform 0.1s, background-color 0.2s;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.group-handling-save-btn:hover {
+  background-color: #2980b9;
+  transform: translateY(-2px);
+}
+
+.group-handling-save-btn:active {
+  transform: translateY(0);
+}
+
+
+.group-handling-list {
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+
+.group-handling-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.group-handling-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.group-handling-list::-webkit-scrollbar-track {
+  background: #f9f9f9;
+}
+
+
+.group-handling-item {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #ffffff;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 15px 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  position: relative;
+}
+
+.group-handling-item:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.15);
+  transform: translateY(-2px);
+}
+
+
+.group-handling-item-details strong {
+  display: block;
+  color: var(--text-dark);
+  font-size: 1.05rem;
+  margin-bottom: 4px;
+}
+
+.group-handling-item-details span {
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+
+.group-handling-action-wrapper {
+  position: relative;
+  min-width: 100px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.group-handling-amount-display {
+  font-weight: 700;
+  color: var(--primary-color);
+  font-size: 1.1rem;
+  display: block;
+}
+
+
+.group-handling-delete-btn {
+  display: none;
+  background-color: var(--danger-color);
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.group-handling-delete-btn:hover {
+  background-color: #c0392b;
+}
+
+
+.group-handling-item:not(.read-only):hover .group-handling-amount-display {
+  display: none;
+}
+
+
+.group-handling-item:not(.read-only):hover .group-handling-delete-btn {
+  display: block;
+}
+
+
+.group-handling-item.read-only:hover .group-handling-amount-display {
+  display: block;
+}
+
+
+@media (max-width: 1100px) {
+  .group-handling-section-row {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .group-handling-col-left, .group-handling-col-right {
+    width: 100%;
+    max-width: 700px;
+  }
+}
+
+@media (max-width: 768px) {
+  .group-handling-content {
+    margin-left: 0;
+    padding: 15px;
+  }
+
+  .group-handling-delete-btn {
+    display: block;
+    opacity: 1;
+  }
+
+  .group-handling-amount-display {
+    margin-right: 15px;
+    display: block !important;
+  }
+
+  .group-handling-title {
+    font-size: 1.8rem;
+  }
+
+  .group-handling-section-title {
+    font-size: 1.4rem;
+    margin-top: 30px;
+  }
+}

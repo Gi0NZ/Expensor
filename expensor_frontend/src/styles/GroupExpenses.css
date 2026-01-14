@@ -1,0 +1,254 @@
+:root {
+  --navbar-width: 200px;
+  --bg-light: #dbe4eb;
+  --primary-color: #3498db;
+  --success-color: #27ae60;
+  --danger-color: #e74c3c;
+  --text-dark: #2c3e50;
+  --text-light: #7f8c8d;
+}
+
+
+.group-expenses-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-light);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+  display: flex;
+  overflow: hidden;
+  z-index: 100;
+}
+
+
+.group-expenses-content {
+  flex: 1;
+  margin-left: var(--navbar-width);
+  height: 100%;
+  padding: 30px;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  overflow-y: auto;
+}
+
+
+.group-expenses-title {
+  font-size: 2rem;
+  color: var(--text-dark);
+  margin-bottom: 40px;
+  text-align: center;
+  font-weight: 700;
+}
+
+
+.group-expenses-sections {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 40px;
+  width: 100%;
+  max-width: 1200px;
+  flex-wrap: wrap;
+}
+
+
+.group-expenses-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  box-sizing: border-box;
+
+
+  width: 450px;
+  flex: 0 1 450px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.group-expenses-card-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 20px;
+  width: 100%;
+  text-align: center;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 15px;
+}
+
+
+.group-expenses-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.group-expenses-input {
+  width: 100%;
+  padding: 12px 15px;
+  border-radius: 8px;
+  border: 1px solid #dcdcdc;
+  font-size: 1rem;
+  box-sizing: border-box;
+  transition: border 0.2s;
+}
+
+.group-expenses-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.group-expenses-save-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--success-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.1s, background-color 0.2s;
+}
+
+.group-expenses-save-btn:hover {
+  background-color: #219150;
+  transform: translateY(-2px);
+}
+
+.group-expenses-save-btn:active {
+  transform: translateY(0);
+}
+
+
+.group-expenses-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+
+.group-expenses-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.group-expenses-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.group-expenses-item {
+  background-color: #f9f9f9;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.group-expenses-item:hover {
+  background-color: #fff;
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+
+.group-expenses-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  padding: 16px;
+  padding-right: 50px;
+}
+
+.group-expenses-info h3 {
+  margin: 0 0 5px 0;
+  font-size: 1.1rem;
+  color: var(--text-dark);
+}
+
+.group-expenses-info p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+
+.group-expenses-delete-btn {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #fee;
+  color: var(--danger-color);
+  border: 1px solid #fcc;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.group-expenses-item:hover .group-expenses-delete-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.group-expenses-delete-btn:hover {
+  background-color: var(--danger-color);
+  color: white;
+  transform: translateY(-50%) scale(1.1);
+}
+
+
+@media (max-width: 1000px) {
+  .group-expenses-sections {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .group-expenses-card {
+    width: 100%;
+    max-width: 600px;
+  }
+}
+
+@media (max-width: 768px) {
+  .group-expenses-content {
+    margin-left: 0;
+    padding: 15px;
+  }
+
+  .group-expenses-delete-btn {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
