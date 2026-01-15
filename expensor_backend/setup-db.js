@@ -1,10 +1,10 @@
 require("dotenv").config();
-const { connectDB } = require("./db"); // Importa la funzione dal file db.js
+const { connectDB } = require("./db"); 
 
 async function setupDatabase() {
     try {
         const pool = await connectDB();
-        console.log("✅ Connessione a Azure SQL Database riuscita!");
+        console.log("Connessione a Azure SQL Database riuscita!");
 
         // Creazione della tabella users se non esiste
         await pool.request().query(`
@@ -128,11 +128,21 @@ async function setupDatabase() {
                 FOREIGN KEY (expense_id) REFERENCES group_expenses(id) ON DELETE CASCADE,
                 FOREIGN KEY (user_id) REFERENCES users(microsoft_id)
             );
-        `);     
+        `);
+        
+        await pool.request().query(`
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='user_budgets' AND xtype='U')
+            CREATE TABLE user_budgets (
+                user_id NVARCHAR(255) PRIMARY KEY,
+                monthly_limit DECIMAL(10, 2) NOT NULL,
+                last_email_sent_month DATE DEFAULT NULL 
+            );
+        `)
+
     } catch (err) {
         console.error("❌ Errore nella creazione del database:", err);
     }
 }
 
-// Esegui la creazione del database
+
 setupDatabase();

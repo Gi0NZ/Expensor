@@ -14,7 +14,7 @@ import "../styles/Homepage.css";
 const CATEGORY_COLORS = {
   "Alimentari": "#dc750f",
   "Salute": "#9966FF",
-  "Trasporti": "#0a70b4",
+  "Trasporti": "#36A2EB",
   "Casa": "#4BC0C0",
   "Intrattenimento": "#FFCE56",
   "Altro": "#319e74"

@@ -2,26 +2,19 @@ const sql = require("mssql");
 const { connectDB } = require("../db");
 const { parseCookies } = require("../utils/cookieHelper");
 const jwt = require("jsonwebtoken");
+const { sendBudgetAlert } = require("../utils/budgetMailSender");
 
 /**
- * Azure function per gestire l'aggiunta di una spesa personale di un utente
- * **Funzionamento**
- * La funzione gestisce:
- * 1. Controllo e Preflight CORS con supporto credenziali (Cookie)
- * 2. Autenticazione tramite Cookie HttpOnly (`auth_token`)
- * 3. Validazione dei dati in ingresso
- * 4. Inserimento nel database usando l'ID utente estratto dal token
+ * Azure function per gestire l'aggiunta di una spesa personale.
+ * * **Funzionalità:**
+ * 1. Gestione CORS e Preflight.
+ * 2. Autenticazione tramite Cookie HttpOnly (`auth_token`).
+ * 3. Inserimento spesa nel DB `expenses`.
+ * 4. **Check Budget:** Verifica se la spesa fa sforare il budget mensile.
+ * 5. **Email Alert:** Se il budget è superato e non è già stata inviata mail questo mese, invia notifica con Resend.
  * * @module Expenses
- * @param {object} context - Contesto di esecuzione di Azure Function
- * @param {object} req - Oggetto della richiesta HTTP
- * @param {string} req.headers.cookie - Cookie contenente il token JWT (`auth_token`)
- * @param {object} req.body - Corpo della richiesta; contiene i dati della spesa.
- * @param {number} req.body.amount - Importo della spesa.
- * @param {string} req.body.date - Data della spesa con formato (YYYY-MM-DD).
- * @param {string} req.body.description - Descrizione (opzionale).
- * @param {number} req.body.category_id - ID della categoria.
- * // NOTA: user_id rimosso dai parametri del body perché estratto dal token
- * * @returns {Promise<void>} Risponde con codice 201 in caso di successo, 400/401/500 in caso di errore
+ * @param {object} context - Contesto di esecuzione Azure.
+ * @param {object} req - Oggetto della richiesta HTTP.
  */
 module.exports = async function (context, req) {
   const allowedOrigin = process.env.ALLOWED_ORIGIN;
@@ -36,12 +29,9 @@ module.exports = async function (context, req) {
     "Access-Control-Allow-Headers": "Content-Type",
   };
 
-  // Gestione Preflight
+ 
   if (req.method === "OPTIONS") {
-    context.res = {
-      status: 204,
-      headers: corsHeaders,
-    };
+    context.res = { status: 204, headers: corsHeaders };
     return;
   }
 
@@ -54,7 +44,7 @@ module.exports = async function (context, req) {
       context.res = {
         status: 401,
         headers: corsHeaders,
-        body: { error: "Non autenticato. Effettua il login." },
+        body: { error: "Non autenticato." },
       };
       return;
     }
@@ -71,10 +61,16 @@ module.exports = async function (context, req) {
 
     const currentUserId = decodedToken.oid;
 
+    const userEmail =
+      decodedToken.email ||
+      decodedToken.preferred_username ||
+      decodedToken.unique_name ||
+      req.body.email;
+    const userName = decodedToken.name || req.body.name || "Utente";
+
     const { amount, date, description, category_id } = req.body;
 
     if (!amount || !date || !category_id) {
-      context.log.warn("AddExpense: Campi obbligatori mancanti.");
       context.res = {
         status: 400,
         headers: corsHeaders,
@@ -87,30 +83,104 @@ module.exports = async function (context, req) {
 
     const pool = await connectDB();
 
+ 
     await pool
       .request()
       .input("amount", sql.Decimal(10, 2), amount)
       .input("date", sql.Date, date)
       .input("description", sql.NVarChar(255), description || "")
       .input("category_id", sql.Int, category_id)
-      .input("user_id", sql.NVarChar(255), currentUserId) // Usiamo l'ID dal token
-      .query(`
+      .input("user_id", sql.NVarChar(255), currentUserId).query(`
         INSERT INTO expenses (amount, date, description, category_id, user_id)
         VALUES (@amount, @date, @description, @category_id, @user_id)
       `);
+
+    try {
+      const checkBudget = await pool
+        .request()
+        .input("userId", sql.NVarChar, currentUserId).query(`
+            SELECT 
+                b.monthly_limit,
+                b.last_email_sent_month, 
+                (SELECT ISNULL(SUM(amount), 0) FROM expenses 
+                 WHERE user_id = @userId 
+                 AND MONTH(date) = MONTH(GETDATE()) 
+                 AND YEAR(date) = YEAR(GETDATE())
+                ) AS total_spent
+            FROM user_budgets b
+            WHERE b.user_id = @userId
+        `);
+
+      if (checkBudget.recordset.length > 0) {
+        const { monthly_limit, total_spent, last_email_sent_month } =
+          checkBudget.recordset[0];
+        const now = new Date();
+        let emailAlreadySentThisMonth = false;
+
+        if (last_email_sent_month) {
+          const sentDateObj = new Date(last_email_sent_month);
+          const sentMonth = sentDateObj.getMonth();
+          const sentYear = sentDateObj.getFullYear();
+
+          if (sentMonth === now.getMonth() && sentYear === now.getFullYear()) {
+            emailAlreadySentThisMonth = true;
+          }
+        }
+
+        if (total_spent > monthly_limit && !emailAlreadySentThisMonth) {
+          if (userEmail) {
+            context.log(`Budget superato per ${userEmail}. Invio alert...`);
+
+            console.log(
+              "MAIL: ",
+              userEmail,
+              userName,
+              total_spent,
+              monthly_limit
+            );
+            const emailSent = await sendBudgetAlert(
+              userEmail,
+              userName,
+              total_spent,
+              monthly_limit
+            );
+
+            if (emailSent) {
+              await pool
+                .request()
+                .input("userId", sql.NVarChar, currentUserId)
+                .query(
+                  "UPDATE user_budgets SET last_email_sent_month = GETDATE() WHERE user_id = @userId"
+                );
+              context.log("Flag email aggiornato nel DB.");
+            }
+          } else {
+            context.log.warn(
+              "Impossibile inviare alert budget: Email non trovata."
+            );
+          }
+        }
+      }
+    } catch (budgetError) {
+      context.log.error(
+        "Errore non bloccante nella gestione Budget/Email:",
+        budgetError
+      );
+    }
+
 
     context.res = {
       status: 201,
       headers: corsHeaders,
       body: { message: "Spesa aggiunta con successo!" },
     };
-  } catch (err) {
-    context.log.error("Errore AddExpense:", err);
 
+  } catch (err) {
+    context.log.error("Errore critico AddExpense:", err);
     context.res = {
       status: 500,
       headers: corsHeaders,
-      body: { error: `Errore SQL AddExpense: ${err.message}` },
+      body: { error: `Errore Server: ${err.message}` },
     };
   }
 };

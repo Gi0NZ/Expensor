@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { logout } from "../services/AuthService";
+import { localLogout } from "../services/AuthService";
 import "../styles/Navbar.css";
+import { msalInstance } from "../authConfig";
+import { EventType } from "@azure/msal-browser";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -14,29 +16,54 @@ const Navbar = () => {
   });
 
   useEffect(() => {
-    const storedProfile = localStorage.getItem("userProfile");
+    const updateDisplayName = () => {
+      const currentAccount = msalInstance.getActiveAccount();
 
-    if (storedProfile) {
-      try {
-        const profile = JSON.parse(storedProfile);
-
-        setDisplayName(profile.name || "Utente");
-      } catch (error) {
-        console.error("Errore parsing profilo utente", error);
-        setDisplayName("Utente");
+      if (currentAccount && currentAccount.name) {
+        setDisplayName(currentAccount.name);
+      } else {
+        const storedProfile = localStorage.getItem("userProfile");
+        if (storedProfile) {
+          try {
+            const profile = JSON.parse(storedProfile);
+            setDisplayName(profile.name || "Utente");
+          } catch (error) {
+            setDisplayName("Utente");
+          }
+        } else {
+          setDisplayName("Utente");
+        }
       }
-    } else {
-      setDisplayName("Utente");
-    }
+    };
+
+    updateDisplayName();
+
+    const callbackId = msalInstance.addEventCallback((event) => {
+      if (
+        event.eventType === EventType.LOGIN_SUCCESS ||
+        event.eventType === EventType.ACQUIRE_TOKEN_SUCCESS ||
+        event.eventType === EventType.ACCOUNT_ADDED
+      ) {
+        const account = event.payload.account;
+        msalInstance.setActiveAccount(account);
+        updateDisplayName();
+      }
+    });
+
+    return () => {
+      if (callbackId) {
+        msalInstance.removeEventCallback(callbackId);
+      }
+    };
   }, []);
 
   const handleLogout = async () => {
     try {
-      await logout();
-      navigate("/login");
+      await localLogout();
     } catch (error) {
       console.error("Errore durante il logout", error);
-      navigate("/login");
+    } finally{
+      window.location.href = "/login";
     }
   };
 
@@ -86,7 +113,11 @@ const Navbar = () => {
       <div className="spacer"></div>
 
       <button onClick={() => navigate("/profilePage")} className="name-button">
-        <span className="nav-text">{displayName}</span>
+        {isCollapsed ? (
+          <span className="nav-icon">👤</span>
+        ) : (
+          <span className="nav-text">{displayName}</span>
+        )}
       </button>
 
       <button onClick={handleLogout} className="logout-button">

@@ -28,7 +28,7 @@ const Login = () => {
       await loginWithMicrosoft();
       navigate("/homepage", { replace: true });
     } catch (error) {
-      console.error("❌ Errore nel login:", error);
+      console.error("Errore nel login:", error);
     }
   };
 

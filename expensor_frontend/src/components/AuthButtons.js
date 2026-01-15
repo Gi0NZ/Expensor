@@ -8,14 +8,13 @@ const AuthButtons = ({ isAuthenticated }) => {
   const handleLogin = async () => {
     try {
       await loginWithMicrosoft();
-      navigate("/");
     } catch (error) {
       console.error("Errore durante il login:", error);
     }
   };
 
   const handleLogout = async () => {
-    await logout();
+    await localLogout();
     navigate("/login");
   };
 

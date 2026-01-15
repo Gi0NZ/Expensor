@@ -53,3 +53,23 @@ export const logout = async () => {
     console.error("Errore durante il logout:", error);
   }
 };
+
+export const localLogout = async () => {
+  try {
+    await fetch(`${API_BASE_URL}/Logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch (error) {
+    console.error("Errore logout backend:", error);
+  } finally {
+    localStorage.clear(); // Pulisce userProfile, navbarCollapsed, e cache MSAL se presente
+
+    const account = msalInstance.getActiveAccount();
+    if (account) {
+      msalInstance.setActiveAccount(null);
+    }
+
+    sessionStorage.clear();
+  }
+};

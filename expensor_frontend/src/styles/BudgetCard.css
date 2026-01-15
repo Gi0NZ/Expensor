@@ -1,0 +1,136 @@
+/* Container principale della card: Stile pulito e moderno */
+.budget-card {
+    background-color: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    /* Ombra leggera coerente col sito */
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    transition: transform 0.2s ease;
+}
+
+/* Effetto hover leggero (opzionale) */
+.budget-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Header con Titolo e Bottone settings */
+.budget-card .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.budget-card h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #333;
+    font-weight: 700;
+}
+
+/* Bottone icona (ingranaggio) */
+.icon-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.icon-btn:hover {
+    background-color: #f0f0f0;
+}
+
+/* --- BARRA DI PROGRESSO --- */
+.progress-bg {
+    width: 100%;
+    height: 12px;
+    background-color: #e9ecef;
+    /* Grigio chiaro per lo sfondo */
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.6s ease-in-out, background-color 0.4s ease;
+}
+
+/* Statistiche sotto la barra */
+.stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.95rem;
+    color: #555;
+}
+
+.status-text {
+    text-align: right;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #4bc0c0;
+    /* Verde di default */
+    margin: 0;
+}
+
+.status-text.alert {
+    color: #ff6384;
+    /* Rosso se sfori */
+}
+
+/* --- MODALITÀ EDIT (Input e Bottone) --- */
+.edit-mode {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.edit-mode input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+    flex: 1;
+}
+
+.edit-mode button {
+    background-color: #36A2EB;
+    /* Blu coerente col grafico */
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.edit-mode button:hover {
+    background-color: #258cd1;
+}
+
+/* Stato vuoto */
+.budget-card.empty {
+    text-align: center;
+    border: 2px dashed #e0e0e0;
+    box-shadow: none;
+    background-color: #fafafa;
+}
+
+.budget-card.empty button {
+    background-color: #4BC0C0;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 10px;
+}

@@ -7,7 +7,6 @@
   --text-light: #7f8c8d;
 }
 
-
 .page-wrapper {
   display: block;
   width: 100%;
@@ -24,12 +23,32 @@
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start; /* Cambiato da center a flex-start per lo scroll */
   padding: 40px 20px;
   box-sizing: border-box;
   position: relative;
   z-index: 1;
+  overflow-y: auto; /* Permette lo scroll se lo schermo è piccolo */
 }
+
+/* --- NUOVO: Contenitore verticale per Budget + Form --- */
+.content-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 500px;
+  margin-top: 20px; /* Un po' di margine dall'alto */
+  position: relative;
+  z-index: 2;
+}
+
+/* Wrapper per il budget per assicurarsi che stia bene nello stack */
+.budget-section-wrapper {
+  width: 100%;
+  animation: slideIn 0.3s ease-out;
+}
+/* ----------------------------------------------------- */
 
 .page-wrapper::before {
   content: '+';
@@ -62,13 +81,13 @@
 .add-expense-card {
   background: white;
   width: 100%;
-  max-width: 500px;
+  /* max-width rimosso qui perché gestito dal padre .content-stack */
   padding: 40px;
   border-radius: 16px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
   animation: slideIn 0.4s ease-out;
   position: relative;
-  z-index: 2;
+  box-sizing: border-box;
 }
 
 @keyframes slideIn {
@@ -76,13 +95,11 @@
     opacity: 0;
     transform: translateY(20px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
-
 
 .add-expense-card-header {
   display: flex;
@@ -93,18 +110,17 @@
   text-align: center;
 }
 
-.card-header h2 {
+.add-expense-card-header h2 { /* Corretto il selettore */
   margin: 0 0 10px 0;
   color: var(--text-color);
   font-size: 1.8rem;
 }
 
-.card-header p {
+.add-expense-card-header p {
   color: var(--text-light);
   font-size: 0.95rem;
   margin: 0;
 }
-
 
 .expense-form {
   display: flex;
@@ -154,7 +170,6 @@ input:focus, select:focus {
 input::placeholder {
   color: #bdc3c7;
 }
-
 
 .submit-btn {
   margin-top: 10px;
@@ -207,11 +222,15 @@ input::placeholder {
   border: 1px solid #f5c6cb;
 }
 
-
 @media (max-width: 768px) {
   .page-content {
     padding: 20px;
     align-items: flex-start;
+  }
+
+  .content-stack {
+    width: 100%;
+    margin-top: 10px;
   }
 
   .add-expense-card {

@@ -676,3 +676,37 @@ export async function deleteProfileImage(microsoft_id) {
   if (!response.ok) throw new Error("Errore cancellazione");
   return await response.json();
 }
+
+/**
+ * Recupera lo stato attuale del budget utente dal backend.
+ * Restituisce il limite impostato e quanto è stato speso nel mese corrente.
+ * * @returns {Promise<Object|null>} Oggetto contenente { monthly_limit, current_spent } o null se la richiesta fallisce.
+ */
+export async function getBudgetStatus() {
+  const res = await fetch(`${API_BASE_URL}/GetBudgetStatus`, {
+    method: "GET",
+    credentials: "include", // Fondamentale per inviare i cookie di auth
+  });
+
+  if (!res.ok) return null; // Se c'è errore (es. 401 o 500), restituisce null per non rompere la UI
+  return await res.json();
+}
+
+/**
+ * Imposta o aggiorna il limite di budget mensile per l'utente.
+ * Invia il nuovo valore al backend che gestirà l'aggiornamento nel DB.
+ * * @param {number} monthly_limit - Il nuovo tetto massimo di spesa (es. 500.00).
+ * @returns {Promise<Object>} La risposta del server (es. messaggio di conferma).
+ * @throws {Error} Lancia un errore se il salvataggio fallisce.
+ */
+export async function setBudget(monthly_limit) {
+  const res = await fetch(`${API_BASE_URL}/SetBudget`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ monthly_limit }),
+    credentials: "include",
+  });
+
+  if (!res.ok) throw new Error("Errore durante il salvataggio del budget");
+  return await res.json();
+}

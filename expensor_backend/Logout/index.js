@@ -1,14 +1,13 @@
-const { parseCookies } = require("../utils/cookieHelper");
-
 module.exports = async function (context, req) {
   const allowedOrigin = process.env.ALLOWED_ORIGIN;
   const requestOrigin = req.headers["origin"];
-  
+  const originToUse = requestOrigin === allowedOrigin ? requestOrigin : allowedOrigin;
+
   const corsHeaders = {
-    "Access-Control-Allow-Origin": requestOrigin === allowedOrigin ? requestOrigin : "null",
+    "Access-Control-Allow-Origin": originToUse,
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type"
+    "Access-Control-Allow-Headers": "Content-Type",
   };
 
   if (req.method === "OPTIONS") {
@@ -16,22 +15,14 @@ module.exports = async function (context, req) {
     return;
   }
 
-  const isProduction = process.env.NODE_ENV === "production";
+  const cookieString = "auth_token=; Path=/; HttpOnly; Secure; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT";
 
   context.res = {
     status: 200,
-    headers: corsHeaders,
-    body: { message: "Logout effettuato" },
-    cookies: [
-      {
-        name: "auth_token",
-        value: "",
-        path: "/",
-        expires: new Date(0),  
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: "Lax"
-      }
-    ]
+    headers: {
+      ...corsHeaders,
+      "Set-Cookie": cookieString 
+    },
+    body: { message: "Logout locale effettuato con successo" }
   };
 };

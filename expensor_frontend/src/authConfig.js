@@ -19,7 +19,8 @@ export const loginRequest = {
     "profile",
     "email",
     `${process.env.REACT_APP_AUDIENCE}/access_as_user`
-  ]
+  ],
+  prompt: "select_account"
 };
 
 export const tokenRequest = {
