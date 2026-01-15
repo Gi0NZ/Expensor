@@ -16,14 +16,11 @@ Il backend di Expensor è sviluppato in **Node.js** tramite un approccio serverl
 # Struttura Backend
 
 ```text
-
-├──  │   └── 
-
 expensor_backend\
-│   ├──  funzioni                   #Tutte le funzioni backend - omesse 
-│   ├── utils                       #Funzioni di utilità
-│       ├──  budgetMailSender.js    #Mail superamento budget
-│       └── cookieHelper.js         #Trasforma cookie string in JSON
-│   ├──  db.js                      #Gestione connessione DB
-│   └── setup-db.js                 #Setup struttura DB
-│   └── README.md
+├──  funzioni                   #Tutte le funzioni backend - omesse 
+├── utils                       #Funzioni di utilità
+   ├──  budgetMailSender.js    #Mail superamento budget
+   └── cookieHelper.js         #Trasforma cookie string in JSON
+├──  db.js                      #Gestione connessione DB
+└── setup-db.js                 #Setup struttura DB
+└── README.md
