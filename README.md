@@ -32,10 +32,14 @@ Alla base del progetto si pone l'idea di creare un ambiente concentrato ed unifi
 # Documentazione
 
 
-expensor/\
-├── expensor_backend/        # API Node.js e Azure functions\
-│   └── README.md/\
-├── frontend      # React \
-│   └── README.md/\
-├── .gitignore\
-└── README.md\
+# Documentazione
+```text
+Expensor/\
+├── expensor_backend/      # API Serverless (Azure Functions & Node.js)\
+│   └── README.md          # Documentazione Backend\
+│
+├── expensor_frontend/     # Client Application (React & MSAL)\
+│   └── README.md          # Documentazione Frontend\
+│
+├── .gitignore             # File ignorati\
+└── README.md              # Documentazione generale\
