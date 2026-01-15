@@ -2,46 +2,25 @@ const { connectDB } = require("../db");
 const sql = require("mssql");
 
 /**
- * Azure Function per recuperare il profilo completo di un utente.
- * * **Funzionalità:**
- * 1. **Recupero Dati:** Restituisce ID, email, nome, data registrazione e immagine profilo.
- * 2. **Gestione 404:** Se l'ID fornito non esiste nel database, restituisce un errore specifico (utile per gestire nuovi utenti al primo login).
- * 3. **Input:** Accetta il parametro `microsoft_id` via query string (GET).
- * * @module User
- * @param {object} context - Il contesto di esecuzione di Azure Function.
- * @param {object} req - L'oggetto richiesta HTTP.
- * @param {string} req.query.microsoft_id - L'ID univoco dell'utente da recuperare.
- * * @returns {Promise<void>}
- * - **200 OK**: Restituisce un oggetto JSON con i dati dell'utente.
- * - **204 No Content**: Preflight CORS.
- * - **400 Bad Request**: Parametro `microsoft_id` mancante.
- * - **404 Not Found**: Utente non trovato nel database.
- * - **500 Internal Server Error**: Errore server o database.
+ * Azure Function per recuperare il profilo completo di un utente specifico.
+ *
+ * **Flusso di esecuzione:**
+ * 1. **Validazione Input:** Verifica la presenza del parametro obbligatorio `microsoft_id` nella query string.
+ * 2. **Interrogazione DB:** Esegue una query di selezione sulla tabella `users`.
+ * 3. **Gestione Assenza:** Se l'ID non corrisponde a nessun record, restituisce un errore **404 Not Found**. Questo stato è spesso utilizzato dal frontend per determinare se un utente appena loggato deve essere ancora registrato nel DB locale.
+ *
+ * @module User
+ * @param {Object} context - Il contesto di esecuzione di Azure Function.
+ * @param {Object} req - L'oggetto richiesta HTTP.
+ * @param {string} req.query.microsoft_id - L'ID univoco (Microsoft ID) dell'utente da recuperare.
+ *
+ * @returns {Promise<void>} Imposta `context.res` con uno dei seguenti stati:
+ * - **200 OK**: Restituisce un oggetto JSON con i dati dell'utente (`microsoft_id`, `email`, `name`, `created_at`, `profile_image_url`).
+ * - **400 Bad Request**: Parametro `microsoft_id` mancante nella richiesta.
+ * - **404 Not Found**: Nessun utente trovato nel database con l'ID fornito.
+ * - **500 Internal Server Error**: Errore di connessione o query al database.
  */
-
 module.exports = async function (context, req) {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN;
-  const requestOrigin = req.headers["origin"];
-  const corsHeaders = {
-    "Access-Control-Allow-Origin":
-      requestOrigin === allowedOrigin ? requestOrigin : "null",
-    "Content-Type": "application/json",
-  };
-
-  if (req.method === "OPTIONS") {
-    context.res = {
-      status: 204,
-      headers: {
-        ...corsHeaders,
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers":
-          "Content-Type, Authorization, x-microsoft-id",
-        "Access-Control-Max-Age": "86400",
-      },
-    };
-    return;
-  }
-
   try {
     const pool = await connectDB();
     const microsoft_id = req.query.microsoft_id;
@@ -51,7 +30,6 @@ module.exports = async function (context, req) {
       context.res = {
         status: 400,
         body: { error: "Parametro microsoft_id mancante" },
-        headers: corsHeaders,
       };
       return;
     }
@@ -68,14 +46,13 @@ module.exports = async function (context, req) {
       context.res = {
         status: 404,
         body: { error: "Utente non trovato nel database" },
-        headers: corsHeaders,
       };
       return;
     }
 
     context.res = {
       status: 200,
-      headers: corsHeaders,
+
       body: result.recordset[0],
     };
   } catch (err) {
@@ -83,7 +60,6 @@ module.exports = async function (context, req) {
     context.res = {
       status: 500,
       body: { error: `Errore interno server: ${err.message}` },
-      headers: corsHeaders,
     };
   }
 };

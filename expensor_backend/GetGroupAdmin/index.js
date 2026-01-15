@@ -4,53 +4,34 @@ const { parseCookies } = require("../utils/cookieHelper");
 const jwt = require("jsonwebtoken");
 
 /**
- * Azure Function per recuperare le informazioni dell'amministratore di un gruppo.
- * * **Funzionamento:**
- * 1. **Gestione CORS:** Gestione della preflight con supporto credenziali (Cookie).
- * 2. **Sicurezza:** Verifica che la richiesta provenga da un utente autenticato tramite cookie `auth_token`.
- * 3. **Recupero Admin:** Esegue una JOIN tra `groups` e `users` per ottenere ID e nome dell'admin.
- * * @module GroupManagement
- * @param {object} context - Il contesto di esecuzione di Azure Function.
- * @param {object} req - L'oggetto richiesta HTTP.
- * @param {string} req.headers.cookie - Il cookie contenente il token di sessione.
- * @param {number} req.query.group_id - L'ID del gruppo da analizzare.
- * * @returns {Promise<void>}
- * - **200 OK**: Restituisce un array contenente `{ admin, id, name }`.
- * - **204 No Content**: Preflight CORS.
- * - **400 Bad Request**: Parametro `group_id` mancante.
- * - **401 Unauthorized**: Cookie mancante o token invalido.
- * - **500 Internal Server Error**: Errore server o database.
+ * Azure Function per recuperare le informazioni dell'amministratore di un gruppo specifico.
+ *
+ * **Flusso di esecuzione:**
+ * 1. **Autenticazione:** Verifica la presenza e la validità del cookie `auth_token` per identificare l'utente richiedente.
+ * 2. **Validazione Input:** Controlla che il parametro `group_id` sia presente nella query string.
+ * 3. **Recupero Dati:** Esegue una query SQL con `JOIN` tra le tabelle `groups` e `users` per recuperare i dettagli (ID e Nome) dell'amministratore associato a quel gruppo.
+ *
+ * @module GroupManagement
+ * @param {Object} context - Il contesto di esecuzione di Azure Function.
+ * @param {Object} req - L'oggetto richiesta HTTP.
+ * @param {string|number} req.query.group_id - L'ID univoco del gruppo di cui si cerca l'admin.
+ *
+ * @returns {Promise<void>} Imposta `context.res` con uno dei seguenti stati:
+ * - **200 OK**: Restituisce un array di oggetti contenente: `{ admin (Microsoft ID), id (Group ID), name (Admin Name) }`.
+ * - **400 Bad Request**: Parametro `group_id` mancante nella richiesta.
+ * - **401 Unauthorized**: Cookie mancante o token non valido.
+ * - **500 Internal Server Error**: Errore durante l'interazione con il database.
  */
-
 module.exports = async function (context, req) {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN;
-  const requestOrigin = req.headers["origin"];
-  const originToUse = requestOrigin === allowedOrigin ? requestOrigin : allowedOrigin;
-
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": originToUse,
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type"
-  };
-
-  if (req.method === "OPTIONS") {
-    context.res = {
-      status: 204,
-      headers: corsHeaders
-    };
-    return;
-  }
-
   try {
     const cookies = parseCookies(req);
-    const token = cookies['auth_token'];
+    const token = cookies["auth_token"];
 
     if (!token) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
-        body: { error: "Non autenticato." }
+
+        body: { error: "Non autenticato." },
       };
       return;
     }
@@ -59,8 +40,8 @@ module.exports = async function (context, req) {
     if (!decodedToken || !decodedToken.oid) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
-        body: { error: "Token non valido." }
+
+        body: { error: "Token non valido." },
       };
       return;
     }
@@ -71,15 +52,13 @@ module.exports = async function (context, req) {
       context.res = {
         status: 400,
         body: { error: "Parametro group_id mancante" },
-        headers: corsHeaders,
       };
       return;
     }
 
     const pool = await connectDB();
 
-    const result = await pool.request()
-      .input("group_id", sql.Int, group_id)
+    const result = await pool.request().input("group_id", sql.Int, group_id)
       .query(`
         SELECT 
           g.admin,
@@ -92,15 +71,17 @@ module.exports = async function (context, req) {
 
     context.res = {
       status: 200,
-      headers: corsHeaders,
+
       body: result.recordset,
     };
   } catch (err) {
     context.log.error("GetGroupAdmin: errore 500 interno", err);
     context.res = {
       status: 500,
-      headers: corsHeaders,
-      body: { error: `Errore nel recupero dell'admin del gruppo: ${err.message}` },
+
+      body: {
+        error: `Errore nel recupero dell'admin del gruppo: ${err.message}`,
+      },
     };
   }
 };

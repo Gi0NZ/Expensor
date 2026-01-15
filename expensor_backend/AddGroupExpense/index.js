@@ -5,43 +5,30 @@ const jwt = require("jsonwebtoken");
 
 /**
  * Azure Function per registrare una nuova spesa condivisa all'interno di un gruppo.
- * * **Logica di Sicurezza (RBAC):**
- * Prima di inserire la spesa, verifica che l'utente richiedente (identificato tramite Cookie) sia l'**ADMIN** del gruppo specificato.
- * * @module GroupExpenses
- * @param {object} context - Il contesto di esecuzione di Azure Function.
- * @param {object} req - L'oggetto richiesta HTTP.
- * @param {string} req.headers.cookie - Il cookie contenente il token di sessione.
- * @param {object} req.body - Il corpo della richiesta.
- * @param {number} req.body.group_id - L'ID del gruppo.
- * @param {string} req.body.description - Descrizione della spesa.
- * @param {number} req.body.amount - Importo.
- * * @returns {Promise<void>}
- * - **201 Created**: Spesa aggiunta.
- * - **400 Bad Request**: Parametri mancanti.
- * - **401 Unauthorized**: Cookie mancante o token invalido.
- * - **403 Forbidden**: L'utente non è l'admin del gruppo.
- * - **404 Not Found**: Il gruppo non esiste.
+ *
+ * **Logica di Sicurezza (RBAC):**
+ * Questa funzione applica un controllo rigoroso sui permessi:
+ * 1. Recupera l'ID utente dal token JWT (`auth_token`).
+ * 2. Verifica nel database chi è l'amministratore del gruppo specificato (`group_id`).
+ * 3. Se l'utente richiedente **NON** è l'admin del gruppo, la richiesta viene bloccata con un `403 Forbidden`.
+ *
+ * @module GroupExpenses
+ * @param {Object} context - Il contesto di esecuzione della Azure Function (logging e binding).
+ * @param {Object} req - L'oggetto richiesta HTTP.
+ * @param {Object} req.body - Il payload della richiesta contenente i dettagli della spesa.
+ * @param {number} req.body.group_id - L'ID univoco del gruppo di spesa.
+ * @param {string} req.body.description - Una breve descrizione della spesa.
+ * @param {number} req.body.amount - L'importo totale della spesa pagata dall'admin.
+ *
+ * @returns {Promise<void>} Imposta `context.res` con uno dei seguenti stati:
+ * - **201 Created**: Spesa registrata con successo.
+ * - **400 Bad Request**: Parametri obbligatori mancanti (`group_id`, `description`, `amount`).
+ * - **401 Unauthorized**: Cookie mancante o Token JWT non valido/scaduto.
+ * - **403 Forbidden**: L'utente autenticato non è l'amministratore del gruppo.
+ * - **404 Not Found**: Il gruppo specificato non esiste nel database.
+ * - **500 Internal Server Error**: Errore di connessione al DB o errore imprevisto.
  */
 module.exports = async function (context, req) {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN;
-  const requestOrigin = req.headers["origin"];
-
-  const corsHeaders = {
-    "Access-Control-Allow-Origin":
-      requestOrigin === allowedOrigin ? requestOrigin : "null",
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-
-  if (req.method === "OPTIONS") {
-    context.res = {
-      status: 204,
-      headers: corsHeaders,
-    };
-    return;
-  }
-
   try {
     const cookies = parseCookies(req);
     const token = cookies["auth_token"];
@@ -49,7 +36,6 @@ module.exports = async function (context, req) {
     if (!token) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
         body: { error: "Non autenticato." },
       };
       return;
@@ -59,7 +45,6 @@ module.exports = async function (context, req) {
     if (!decodedToken || !decodedToken.oid) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
         body: { error: "Token non valido." },
       };
       return;
@@ -71,7 +56,6 @@ module.exports = async function (context, req) {
     if (!group_id || !description || !amount) {
       context.res = {
         status: 400,
-        headers: corsHeaders,
         body: {
           error: "Campi obbligatori mancanti.",
         },
@@ -89,7 +73,6 @@ module.exports = async function (context, req) {
     if (groupCheck.recordset.length === 0) {
       context.res = {
         status: 404,
-        headers: corsHeaders,
         body: { error: "Gruppo non trovato." },
       };
       return;
@@ -100,7 +83,6 @@ module.exports = async function (context, req) {
     if (groupAdmin !== requestingUserId) {
       context.res = {
         status: 403,
-        headers: corsHeaders,
         body: {
           error:
             "Non autorizzato: Solo l'Admin del gruppo può aggiungere spese.",
@@ -121,14 +103,12 @@ module.exports = async function (context, req) {
 
     context.res = {
       status: 201,
-      headers: corsHeaders,
       body: { message: "Spesa aggiunta con successo!" },
     };
   } catch (err) {
     context.log.error("Errore AddGroupExpense:", err);
     context.res = {
       status: 500,
-      headers: corsHeaders,
       body: { error: `Errore SQL: ${err.message}` },
     };
   }

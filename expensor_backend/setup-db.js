@@ -88,9 +88,6 @@ async function setupDatabase() {
             CREATE TABLE group_members (
                 group_id INT NOT NULL,
                 user_id NVARCHAR(255) NOT NULL,
-                contributed_amount DECIMAL(10,2) DEFAULT 0,
-                owed_amount DECIMAL(10,2) DEFAULT 0,
-                settled_amount DECIMAL(10,2) DEFAULT 0,
                 PRIMARY KEY (group_id, user_id),
                 FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
                 FOREIGN KEY (user_id) REFERENCES users(microsoft_id)
@@ -140,7 +137,7 @@ async function setupDatabase() {
         `)
 
     } catch (err) {
-        console.error("❌ Errore nella creazione del database:", err);
+        console.error("Errore nella creazione del database:", err);
     }
 }
 

@@ -5,48 +5,32 @@ const { parseCookies } = require("../utils/cookieHelper");
 const jwt = require("jsonwebtoken");
 
 /**
- * Azure Function per aggiungere un utente a un gruppo esistente e comunicandogli l'aggiunta tramite mail.
- * * **Funzionamento:**
- * 1. **Gestione CORS:** Verifica l'origine e gestisce il preflight `OPTIONS` con credenziali.
- * 2. **Sicurezza:** Identifica chi fa la richiesta tramite Cookie. Solo l'**Admin** del gruppo può aggiungere membri.
- * 3. **Inserimento Membro:** Tenta di inserire il record nella tabella `group_members`.
- * - *Gestione Conflitti:* Se l'utente è già nel gruppo, restituisce **409 Conflict**.
- * 4. **Invio Email:** Utilizza Resend per notificare l'utente.
- * * @module GroupMembers
- * @param {object} context - Il contesto di esecuzione di Azure Function.
- * @param {object} req - L'oggetto richiesta HTTP.
- * @param {string} req.headers.cookie - Il cookie contenente il token di sessione.
- * @param {object} req.body - Il corpo della richiesta.
- * @param {number} req.body.group_id - L'ID del gruppo in cui inserire l'utente.
- * @param {string} req.body.microsoft_id - Il Microsoft ID dell'utente da aggiungere.
- * * @returns {Promise<void>}
- * - **200 OK**: Utente aggiunto con successo.
- * - **400 Bad Request**: Parametri mancanti.
- * - **401 Unauthorized**: Cookie mancante o invalido.
- * - **403 Forbidden**: L'utente richiedente non è l'admin del gruppo.
+ * Azure Function per aggiungere un utente a un gruppo esistente e notificargli l'evento.
+ *
+ * **Flusso di Esecuzione:**
+ * 1. **Autenticazione:** Verifica la validità del token JWT presente nei cookie.
+ * 2. **Autorizzazione (RBAC):** Controlla che l'utente richiedente sia l'**Admin** del gruppo.
+ * 3. **Inserimento (Atomic):** Tenta di inserire il record nella tabella `group_members`.
+ * - Se l'utente è già presente, intercetta l'errore SQL 2627 e restituisce **409 Conflict**.
+ * 4. **Notifica Email:** Recupera i dettagli utente/gruppo e invia una mail di benvenuto tramite **Resend** (azione *best-effort*, non blocca la risposta in caso di errore).
+ *
+ * @module GroupMembers
+ * @param {Object} context - Il contesto di esecuzione di Azure Function.
+ * @param {Object} req - L'oggetto richiesta HTTP.
+ * @param {Object} req.body - Il payload della richiesta.
+ * @param {number} req.body.group_id - L'ID univoco del gruppo.
+ * @param {string} req.body.microsoft_id - L'ID Microsoft (UUID) dell'utente da aggiungere.
+ *
+ * @returns {Promise<void>} Imposta `context.res` con uno dei seguenti stati:
+ * - **200 OK**: Utente aggiunto con successo (email inviata o loggato errore invio).
+ * - **400 Bad Request**: Parametri `group_id` o `microsoft_id` mancanti.
+ * - **401 Unauthorized**: Token mancante o invalido.
+ * - **403 Forbidden**: L'utente richiedente non è l'amministratore del gruppo.
+ * - **404 Not Found**: Il gruppo specificato non esiste.
  * - **409 Conflict**: L'utente fa già parte del gruppo.
- * - **500 Internal Server Error**: Errore generico.
+ * - **500 Internal Server Error**: Errore generico del server.
  */
-
 module.exports = async function (context, req) {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN;
-  const requestOrigin = req.headers["origin"];
-  const corsHeaders = {
-    "Access-Control-Allow-Origin":
-      requestOrigin === allowedOrigin ? requestOrigin : "null",
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-
-  if (req.method === "OPTIONS") {
-    context.res = {
-      status: 204,
-      headers: corsHeaders,
-    };
-    return;
-  }
-
   try {
     const cookies = parseCookies(req);
     const token = cookies["auth_token"];
@@ -54,7 +38,7 @@ module.exports = async function (context, req) {
     if (!token) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
+
         body: { error: "Non autenticato." },
       };
       return;
@@ -64,7 +48,7 @@ module.exports = async function (context, req) {
     if (!decodedToken || !decodedToken.oid) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
+
         body: { error: "Token non valido." },
       };
       return;
@@ -78,7 +62,6 @@ module.exports = async function (context, req) {
       context.res = {
         status: 400,
         body: { error: "Dati mancanti" },
-        headers: corsHeaders,
       };
       return;
     }
@@ -93,7 +76,7 @@ module.exports = async function (context, req) {
     if (groupCheck.recordset.length === 0) {
       context.res = {
         status: 404,
-        headers: corsHeaders,
+
         body: { error: "Gruppo non trovato." },
       };
       return;
@@ -104,7 +87,7 @@ module.exports = async function (context, req) {
     if (groupAdmin !== requestingUserId) {
       context.res = {
         status: 403,
-        headers: corsHeaders,
+
         body: {
           error: "Non autorizzato: Solo l'Admin può aggiungere membri.",
         },
@@ -117,15 +100,14 @@ module.exports = async function (context, req) {
         .request()
         .input("gid", sql.Int, group_id)
         .input("uid", sql.NVarChar, microsoft_id).query(`
-            INSERT INTO group_members (group_id, user_id, contributed_amount, owed_amount, settled_amount)
-            VALUES (@gid, @uid, 0, 0, 0)
+            INSERT INTO group_members (group_id, user_id)
+            VALUES (@gid, @uid)
         `);
     } catch (sqlErr) {
       if (sqlErr.number === 2627) {
         context.res = {
           status: 409,
           body: { error: "L'utente fa già parte del gruppo." },
-          headers: corsHeaders,
         };
         return;
       }
@@ -172,14 +154,12 @@ module.exports = async function (context, req) {
     context.res = {
       status: 200,
       body: { message: "Membro aggiunto con successo" },
-      headers: corsHeaders,
     };
   } catch (err) {
     context.log.error("Errore AddGroupMember:", err);
     context.res = {
       status: 500,
       body: { error: "Errore interno server: " + err.message },
-      headers: corsHeaders,
     };
   }
 };

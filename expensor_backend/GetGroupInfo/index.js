@@ -5,51 +5,33 @@ const jwt = require("jsonwebtoken");
 
 /**
  * Azure Function per recuperare le informazioni generali di un gruppo (es. nome, data creazione, admin).
- * * **Funzionalità:**
- * 1. **Gestione CORS:** Gestisce il preflight "OPTIONS" con credenziali.
- * 2. **Sicurezza:** Verifica che la richiesta provenga da un utente autenticato tramite cookie.
- * 3. **Recupero Dati:** Esegue una `SELECT *` sulla tabella `groups` filtrando per ID.
- * * @module GroupManagement
- * @param {object} context - Il contesto di esecuzione di Azure Function.
- * @param {object} req - L'oggetto richiesta HTTP.
- * @param {string} req.headers.cookie - Il cookie contenente il token di sessione.
- * @param {number} req.query.group_id - L'ID del gruppo da recuperare.
- * * @returns {Promise<void>}
- * - **200 OK**: Restituisce un array contenente l'oggetto gruppo.
- * - **204 No Content**: Preflight CORS.
+ *
+ * **Flusso di esecuzione:**
+ * 1. **Autenticazione:** Verifica la validità del token JWT (`auth_token`) estratto dai cookie.
+ * 2. **Validazione Input:** Controlla la presenza del parametro obbligatorio `group_id` nella query string.
+ * 3. **Recupero Dati:** Esegue una query `SELECT *` sulla tabella `groups` filtrando per l'ID fornito.
+ *
+ * @module GroupManagement
+ * @param {Object} context - Il contesto di esecuzione di Azure Function.
+ * @param {Object} req - L'oggetto richiesta HTTP.
+ * @param {string|number} req.query.group_id - L'ID univoco del gruppo da recuperare.
+ *
+ * @returns {Promise<void>} Imposta `context.res` con uno dei seguenti stati:
+ * - **200 OK**: Restituisce un array contenente l'oggetto gruppo (di solito un singolo record).
  * - **400 Bad Request**: Parametro `group_id` mancante.
- * - **401 Unauthorized**: Cookie mancante o token invalido.
- * - **500 Internal Server Error**: Errore server o database.
+ * - **401 Unauthorized**: Cookie mancante o token non valido.
+ * - **500 Internal Server Error**: Errore di connessione o query al database.
  */
-
 module.exports = async function (context, req) {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN;
-  const requestOrigin = req.headers["origin"];
-  const corsHeaders = {
-    "Access-Control-Allow-Origin":
-      requestOrigin === allowedOrigin ? requestOrigin : "null",
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-
-  if (req.method === "OPTIONS") {
-    context.res = {
-      status: 204,
-      headers: corsHeaders,
-    };
-    return;
-  }
-
   try {
     const cookies = parseCookies(req);
-    const token = cookies['auth_token'];
+    const token = cookies["auth_token"];
 
     if (!token) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
-        body: { error: "Non autenticato." }
+
+        body: { error: "Non autenticato." },
       };
       return;
     }
@@ -58,8 +40,8 @@ module.exports = async function (context, req) {
     if (!decodedToken || !decodedToken.oid) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
-        body: { error: "Token non valido." }
+
+        body: { error: "Token non valido." },
       };
       return;
     }
@@ -71,7 +53,6 @@ module.exports = async function (context, req) {
       context.res = {
         status: 400,
         body: { error: "Parametro group_id mancante" },
-        headers: corsHeaders,
       };
       return;
     }
@@ -87,14 +68,14 @@ module.exports = async function (context, req) {
 
     context.res = {
       status: 200,
-      headers: corsHeaders,
+
       body: result.recordset,
     };
   } catch (err) {
     context.log.error("GetGroupInfo: errore 500 interno", err);
     context.res = {
       status: 500,
-      headers: corsHeaders,
+
       body: {
         error: {
           error: `Errore nel recupero delle informazioni del gruppo: ${err.message}`,

@@ -5,41 +5,25 @@ const jwt = require("jsonwebtoken");
 
 /**
  * Azure Function per recuperare la lista dei membri partecipanti a un gruppo specifico.
- * * **Funzionamento:**
- * 1. **Gestione CORS**: Gestisce il preflight "OPTIONS" con supporto credenziali.
- * 2. **Sicurezza**: Verifica che la richiesta provenga da un utente autenticato tramite cookie.
- * 3. **Join Dati**: Esegue una `INNER JOIN` tra la tabella `group_members` e la tabella `users`.
- * * @module GroupMembers
- * @param {object} context - Il contesto di esecuzione di Azure Function.
- * @param {object} req - L'oggetto richiesta HTTP.
- * @param {string} req.headers.cookie - Il cookie contenente il token di sessione.
- * @param {number} req.query.group_id - L'ID del gruppo di cui si vogliono conoscere i partecipanti.
- * * @returns {Promise<void>}
- * - **200 OK**: Restituisce un array di oggetti utente (`{ user_id, user_name, user_email }`).
- * - **204 No Content**: Preflight CORS.
+ *
+ * **Flusso di esecuzione:**
+ * 1. **Autenticazione:** Verifica la validità del token JWT (`auth_token`) estratto dai cookie.
+ * 2. **Validazione Input:** Controlla la presenza del parametro `group_id` nella query string.
+ * 3. **Recupero e Arricchimento Dati:** Esegue una `INNER JOIN` tra la tabella di collegamento `group_members` e la tabella anagrafica `users`.
+ * Questo permette di restituire non solo gli ID, ma anche i nomi e le email degli utenti membri.
+ *
+ * @module GroupMembers
+ * @param {Object} context - Il contesto di esecuzione di Azure Function.
+ * @param {Object} req - L'oggetto richiesta HTTP.
+ * @param {string|number} req.query.group_id - L'ID del gruppo di cui si vogliono conoscere i partecipanti.
+ *
+ * @returns {Promise<void>} Imposta `context.res` con uno dei seguenti stati:
+ * - **200 OK**: Restituisce un array di oggetti contenente: `{ user_id, user_name, user_email }`.
  * - **400 Bad Request**: Parametro `group_id` mancante.
- * - **401 Unauthorized**: Cookie mancante o token invalido.
- * - **500 Internal Server Error**: Errore server o database.
+ * - **401 Unauthorized**: Cookie mancante o token non valido.
+ * - **500 Internal Server Error**: Errore durante l'esecuzione della query SQL.
  */
-
 module.exports = async function (context, req) {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN;
-  const requestOrigin = req.headers["origin"];
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": requestOrigin === allowedOrigin ? requestOrigin : "null",
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type"
-  };
-
-  if (req.method === "OPTIONS") {
-    context.res = {
-      status: 204,
-      headers: corsHeaders,
-    };
-    return;
-  }
-
   try {
     const cookies = parseCookies(req);
     const token = cookies['auth_token'];
@@ -47,7 +31,7 @@ module.exports = async function (context, req) {
     if (!token) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
+        
         body: { error: "Non autenticato." }
       };
       return;
@@ -57,7 +41,7 @@ module.exports = async function (context, req) {
     if (!decodedToken || !decodedToken.oid) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
+        
         body: { error: "Token non valido." }
       };
       return;
@@ -68,7 +52,7 @@ module.exports = async function (context, req) {
       context.res = {
         status: 400,
         body: { error: "Parametro group_id mancante" },
-        headers: corsHeaders,
+        
       };
       return;
     }
@@ -88,14 +72,14 @@ module.exports = async function (context, req) {
 
     context.res = {
       status: 200,
-      headers: corsHeaders,
+      
       body: result.recordset,
     };
   } catch (err) {
     context.log.error("GetGroupMembers: errore 500 interno", err);
     context.res = {
       status: 500,
-      headers: corsHeaders,
+      
       body: { error: `Errore nel recupero dei membri: ${err.message}` },
     };
   }

@@ -4,52 +4,37 @@ const { parseCookies } = require("../utils/cookieHelper");
 const jwt = require("jsonwebtoken");
 
 /**
- * Azure Function per eliminare una spesa di gruppo.
- * * **Logica di Sicurezza (Query Atomica):**
- * Utilizza una clausola `WHERE EXISTS` per verificare che l'utente richiedente (identificato tramite Cookie) sia l'Admin del gruppo nello stesso momento in cui tenta di eliminare la spesa.
- * Se l'utente non è admin, la condizione `EXISTS` fallisce e nessuna riga viene eliminata.
- * * @module GroupExpenses
- * @param {object} context - Il contesto di esecuzione di Azure Function.
- * @param {object} req - L'oggetto richiesta HTTP.
- * @param {string} req.headers.cookie - Il cookie contenente il token di sessione.
- * @param {object} req.body - Parametri per l'eliminazione.
- * @param {number} req.body.groupId - ID del gruppo.
- * @param {number} req.body.expenseId - ID della spesa da eliminare.
- * * @returns {Promise<void>}
- * - **200 OK**: Spesa eliminata.
- * - **400 Bad Request**: Dati mancanti.
- * - **401 Unauthorized**: Cookie mancante o token invalido.
- * - **403 Forbidden**: Spesa non trovata o utente non autorizzato (non è admin).
- * - **500 Internal Server Error**: Errore server.
+ * Azure Function per eliminare una spesa condivisa di un gruppo.
+ *
+ * **Sicurezza e Logica SQL (Atomic Check):**
+ * Questa funzione implementa un pattern di sicurezza efficiente a livello di Database:
+ * Esegue un comando `DELETE` condizionato da una clausola `WHERE EXISTS`.
+ * La cancellazione viene effettuata **solo se** la sotto-query conferma che l'utente richiedente (`@reqId`) è l'attuale amministratore (`admin`) del gruppo specificato.
+ * Se l'utente non è admin (o se la spesa/gruppo non esistono), nessuna riga viene toccata.
+ *
+ * @module GroupExpenses
+ * @param {Object} context - Il contesto di esecuzione di Azure Function.
+ * @param {Object} req - L'oggetto richiesta HTTP.
+ * @param {Object} req.body - Il payload della richiesta.
+ * @param {number} req.body.groupId - L'ID del gruppo a cui appartiene la spesa.
+ * @param {number} req.body.expenseId - L'ID della spesa da eliminare.
+ *
+ * @returns {Promise<void>} Imposta `context.res` con uno dei seguenti stati:
+ * - **200 OK**: Eliminazione riuscita (la spesa esisteva e l'utente era admin).
+ * - **400 Bad Request**: Parametri `groupId` o `expenseId` mancanti.
+ * - **401 Unauthorized**: Cookie mancante o token non valido.
+ * - **403 Forbidden**: Operazione fallita. Nessuna riga eliminata. Significa che la spesa non esiste OPPURE l'utente non ha i permessi di Admin.
+ * - **500 Internal Server Error**: Errore di connessione o query SQL.
  */
-
 module.exports = async function (context, req) {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN;
-  const requestOrigin = req.headers["origin"];
-  const corsHeaders = {
-    "Access-Control-Allow-Origin":
-      requestOrigin === allowedOrigin ? requestOrigin : "null",
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-
-  if (req.method === "OPTIONS") {
-    context.res = {
-      status: 204,
-      headers: corsHeaders,
-    };
-    return;
-  }
-
-  try {
+ try {
     const cookies = parseCookies(req);
     const token = cookies['auth_token'];
 
     if (!token) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
+        
         body: { error: "Non autenticato." }
       };
       return;
@@ -59,7 +44,7 @@ module.exports = async function (context, req) {
     if (!decodedToken || !decodedToken.oid) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
+        
         body: { error: "Token non valido." }
       };
       return;
@@ -71,7 +56,7 @@ module.exports = async function (context, req) {
     if (!groupId || !expenseId) {
       context.res = {
         status: 400,
-        headers: corsHeaders,
+        
         body: { error: "Campi obbligatori mancanti (groupId o expenseId)." },
       };
       return;
@@ -98,7 +83,7 @@ module.exports = async function (context, req) {
     if (result.recordset.length === 0) {
       context.res = {
         status: 403,
-        headers: corsHeaders,
+        
         body: {
           error:
             "Operazione fallita: Spesa non trovata oppure non hai i permessi di Admin.",
@@ -109,7 +94,7 @@ module.exports = async function (context, req) {
 
     context.res = {
       status: 200,
-      headers: corsHeaders,
+      
       body: { message: "Spesa gruppo eliminata con successo!" },
     };
   } catch (err) {
@@ -117,7 +102,7 @@ module.exports = async function (context, req) {
 
     context.res = {
       status: 500,
-      headers: corsHeaders,
+      
       body: { error: `Errore interno: ${err.message}` },
     };
   }

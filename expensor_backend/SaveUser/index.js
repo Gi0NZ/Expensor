@@ -3,51 +3,41 @@ const sql = require("mssql");
 const jwt = require("jsonwebtoken");
 
 /**
- * Azure Function per registrare o autenticare un utente e avviare la sessione (Set-Cookie).
- * * **Funzionalità:**
- * 1. **Upsert Utente:** Verifica se l'utente esiste; se no, lo crea.
- * 2. **Sessione:** Genera un JWT firmato contenente l'ID utente.
- * 3. **Cookie:** Imposta il cookie `auth_token` (HttpOnly, Secure) nella risposta.
- * * @module Users
- * @param {object} context - Il contesto di esecuzione di Azure Function.
- * @param {object} req - L'oggetto richiesta HTTP.
- * @param {object} req.body - Dati utente provenienti da MSAL.
- * @param {string} req.body.microsoft_id - ID univoco.
- * @param {string} req.body.email - Email dell'utente.
- * @param {string} req.body.name - Nome visualizzato.
- * * @returns {Promise<void>}
- * - **200 OK**: Login effettuato e Cookie impostato.
- * - **204 No Content**: Preflight CORS.
- * - **400 Bad Request**: Dati mancanti.
- * - **500 Internal Server Error**: Errore server.
+ * Azure Function per gestire il Login/Registrazione (Sign-in/Sign-up) dell'utente.
+ *
+ * **Flusso di esecuzione:**
+ * 1. **Validazione Input:** Verifica la presenza di `microsoft_id` ed `email`.
+ * 2. **Check-or-Create (Idempotenza):**
+ * - Verifica se l'utente esiste già nel database.
+ * - Se non esiste, lo inserisce (registrazione al primo accesso).
+ * 3. **Generazione Sessione:**
+ * - Crea un **JWT** (JSON Web Token) firmato con una durata di 8 ore.
+ * - Imposta il token in un cookie `HttpOnly` chiamato `auth_token`.
+ *
+ * **Nota sui Cookie:**
+ * Il cookie viene impostato come `HttpOnly` per prevenire attacchi XSS (non accessibile via JS lato client) e `SameSite=Lax` per bilanciare sicurezza e usabilità.
+ *
+ * @module Users
+ * @param {Object} context - Il contesto di esecuzione di Azure Function.
+ * @param {Object} req - L'oggetto richiesta HTTP.
+ * @param {Object} req.body - Payload contenente i dati utente (solitamente da MSAL/Frontend).
+ * @param {string} req.body.microsoft_id - ID univoco dell'utente (Subject ID di Azure AD).
+ * @param {string} req.body.email - L'indirizzo email dell'utente.
+ * @param {string} [req.body.name] - Il nome visualizzato dell'utente.
+ *
+ * @returns {Promise<void>} Imposta `context.res` con uno dei seguenti stati:
+ * - **200 OK**: Login successo. Include l'header `Set-Cookie` con il token JWT.
+ * - **400 Bad Request**: Parametri obbligatori mancanti (`microsoft_id` o `email`).
+ * - **500 Internal Server Error**: Errore di connessione al DB o generazione token.
  */
-
 module.exports = async function (context, req) {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN;
-  const requestOrigin = req.headers["origin"];
-  
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": requestOrigin === allowedOrigin ? requestOrigin : "null",
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type"
-  };
-
-  if (req.method === "OPTIONS") {
-    context.res = {
-      status: 204,
-      headers: corsHeaders,
-    };
-    return;
-  }
-
   try {
     const { microsoft_id, email, name } = req.body;
 
     if (!microsoft_id || !email) {
       context.res = {
         status: 400,
-        headers: corsHeaders,
+
         body: { error: "Dati mancanti per la creazione dell'utente" },
       };
       return;
@@ -59,7 +49,9 @@ module.exports = async function (context, req) {
       .request()
       .input("microsoft_id", sql.NVarChar, microsoft_id)
       .input("email", sql.NVarChar, email)
-      .query("SELECT * FROM users WHERE microsoft_id = @microsoft_id OR email = @email");
+      .query(
+        "SELECT * FROM users WHERE microsoft_id = @microsoft_id OR email = @email"
+      );
 
     if (checkUser.recordset.length === 0) {
       await pool
@@ -83,7 +75,7 @@ module.exports = async function (context, req) {
 
     context.res = {
       status: 200,
-      headers: corsHeaders,
+
       body: { message: "Login effettuato con successo" },
       cookies: [
         {
@@ -91,17 +83,17 @@ module.exports = async function (context, req) {
           value: token,
           path: "/",
           httpOnly: true,
-          secure: false, 
+          secure: false,
           sameSite: "Lax",
-          maxAge: 28800 
-        }
-      ]
+          maxAge: 28800,
+        },
+      ],
     };
   } catch (err) {
     context.log.error("Errore SaveUser:", err);
     context.res = {
       status: 500,
-      headers: corsHeaders,
+
       body: { error: `Errore: ${err.message}` },
     };
   }

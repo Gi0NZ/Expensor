@@ -7,53 +7,39 @@ const jwt = require("jsonwebtoken");
 
 /**
  * Azure Function per l'upload e l'aggiornamento dell'immagine del profilo utente.
- * * **Flusso di Esecuzione:**
- * 1. **Autenticazione:** Verifica il cookie `auth_token` ed estrae l'ID utente.
- * 2. **Parsing:** Decodifica il body `multipart/form-data` per estrarre il file.
- * 3. **Pulizia:** Controlla nel DB se l'utente ha già una foto ed elimina il blob precedente.
- * 4. **Upload:** Carica la nuova immagine nel container `profile-images`.
- * 5. **Update DB:** Aggiorna l'URL dell'immagine nella tabella `users`.
- * * **Dipendenze:** Richiede `@azure/storage-blob` e `parse-multipart-data`.
- * * @module UserProfile
- * @param {object} context - Il contesto di esecuzione di Azure Function.
- * @param {object} req - L'oggetto richiesta HTTP (multipart/form-data).
- * @param {string} req.headers.cookie - Il cookie contenente il token di sessione.
- * * @returns {Promise<void>}
- * - **200 OK**: Immagine aggiornata con successo. Restituisce il nuovo URL.
- * - **204 No Content**: Preflight CORS.
- * - **400 Bad Request**: File mancante o body vuoto.
- * - **401 Unauthorized**: Cookie mancante o token invalido.
- * - **500 Internal Server Error**: Errore upload o database.
+ *
+ * **Flusso di Esecuzione:**
+ * 1. **Autenticazione:** Verifica il cookie `auth_token` ed estrae l'ID utente (OID).
+ * 2. **Parsing Multipart:** Decodifica il body della richiesta (`multipart/form-data`) per estrarre il file binario, gestendo il *boundary* presente negli header.
+ * 3. **Setup Storage:** Si connette al container Azure `profile-images` (creandolo se non esiste).
+ * 4. **Pulizia (Cleanup):** * - Controlla nel DB se l'utente ha già una foto profilo.
+ * - Se esiste, tenta di eliminare il vecchio blob dallo storage per risparmiare spazio (operazione *non bloccante* in caso di errore).
+ * 5. **Upload:** Carica la nuova immagine con un nome file univoco (`userID_timestamp_filename`).
+ * 6. **Persistenza:** Aggiorna la tabella `users` con il nuovo URL pubblico dell'immagine.
+ * *
+ *
+ * @module UserProfile
+ * @param {Object} context - Il contesto di esecuzione di Azure Function.
+ * @param {Object} req - L'oggetto richiesta HTTP.
+ * @param {Object} req.headers - Intestazioni HTTP.
+ * @param {string} req.headers.content-type - Fondamentale per estrarre il `boundary` del multipart.
+ * @param {Buffer} req.body - Il corpo della richiesta in formato binario (file data).
+ *
+ * @returns {Promise<void>} Imposta `context.res` con uno dei seguenti stati:
+ * - **200 OK**: Immagine caricata e DB aggiornato. Restituisce il nuovo `url`.
+ * - **401 Unauthorized**: Cookie mancante o token JWT non valido.
+ * - **500 Internal Server Error**: Errore nel parsing del file, connessione allo Storage o query SQL.
  */
-
 module.exports = async function (context, req) {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN;
-  const requestOrigin = req.headers["origin"];
-  const corsHeaders = {
-    "Access-Control-Allow-Origin":
-      requestOrigin === allowedOrigin ? requestOrigin : "null",
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-
-  if (req.method === "OPTIONS") {
-    context.res = {
-      status: 204,
-      headers: corsHeaders,
-    };
-    return;
-  }
-
   try {
     const cookies = parseCookies(req);
-    const token = cookies['auth_token'];
+    const token = cookies["auth_token"];
 
     if (!token) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
-        body: { error: "Non autenticato." }
+
+        body: { error: "Non autenticato." },
       };
       return;
     }
@@ -62,8 +48,8 @@ module.exports = async function (context, req) {
     if (!decodedToken || !decodedToken.oid) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
-        body: { error: "Token non valido." }
+
+        body: { error: "Token non valido." },
       };
       return;
     }
@@ -133,14 +119,14 @@ module.exports = async function (context, req) {
 
     context.res = {
       status: 200,
-      headers: corsHeaders,
+
       body: { message: "Immagine aggiornata con successo", url: newImageUrl },
     };
   } catch (err) {
     context.log.error("Errore upload immagine profilo:", err);
     context.res = {
       status: 500,
-      headers: corsHeaders,
+
       body: { error: "Errore durante l'aggiornamento: " + err.message },
     };
   }

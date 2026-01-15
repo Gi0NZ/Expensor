@@ -5,36 +5,36 @@ const jwt = require("jsonwebtoken");
 const { sendBudgetAlert } = require("../utils/budgetMailSender");
 
 /**
- * Azure function per gestire l'aggiunta di una spesa personale.
- * * **Funzionalità:**
- * 1. Gestione CORS e Preflight.
- * 2. Autenticazione tramite Cookie HttpOnly (`auth_token`).
- * 3. Inserimento spesa nel DB `expenses`.
- * 4. **Check Budget:** Verifica se la spesa fa sforare il budget mensile.
- * 5. **Email Alert:** Se il budget è superato e non è già stata inviata mail questo mese, invia notifica con Resend.
- * * @module Expenses
- * @param {object} context - Contesto di esecuzione Azure.
- * @param {object} req - Oggetto della richiesta HTTP.
+ * Azure Function triggered da HTTP per l'inserimento di una nuova spesa personale.
+ *
+ * **Flusso di esecuzione:**
+ * 1. **Autenticazione:** Recupera il JWT dal cookie `auth_token` e decodifica le informazioni utente (OID, email, nome).
+ * 2. **Validazione Input:** Verifica la presenza di `amount`, `date` e `category_id`.
+ * 3. **Persistenza:** Inserisce il record nella tabella `expenses`.
+ * 4. **Verifica Budget (Non bloccante):**
+ * - Calcola il totale spese del mese corrente.
+ * - Confronta il totale con il `monthly_limit` dell'utente.
+ * - Se il limite è superato e non è stata inviata notifica nel mese corrente, invia email tramite `sendBudgetAlert`.
+ * - Aggiorna il campo `last_email_sent_month` su DB per evitare spam.
+ *
+ * @module Expenses
+ * @param {Object} context - Il contesto di esecuzione della Azure Function (usato per logging e response).
+ * @param {Object} req - L'oggetto richiesta HTTP.
+ * @param {Object} req.body - Il payload della richiesta.
+ * @param {number} req.body.amount - L'importo della spesa.
+ * @param {string} req.body.date - La data della spesa (es. YYYY-MM-DD).
+ * @param {number} req.body.category_id - L'ID numerico della categoria.
+ * @param {string} [req.body.description] - (Opzionale) Descrizione della spesa.
+ * @param {string} [req.body.email] - (Opzionale) Email di fallback se non presente nel token.
+ * @param {string} [req.body.name] - (Opzionale) Nome utente di fallback.
+ *
+ * @returns {Promise<void>} La funzione imposta `context.res` con:
+ * - **201 Created**: Spesa inserita con successo.
+ * - **400 Bad Request**: Parametri obbligatori mancanti.
+ * - **401 Unauthorized**: Cookie mancante o Token non valido.
+ * - **500 Internal Server Error**: Errore server generico.
  */
 module.exports = async function (context, req) {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN;
-  const requestOrigin = req.headers["origin"];
-  const originToUse =
-    requestOrigin === allowedOrigin ? requestOrigin : allowedOrigin;
-
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": originToUse,
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-
- 
-  if (req.method === "OPTIONS") {
-    context.res = { status: 204, headers: corsHeaders };
-    return;
-  }
-
   try {
     const cookies = parseCookies(req);
     const token = cookies["auth_token"];
@@ -43,7 +43,6 @@ module.exports = async function (context, req) {
       context.log.warn("AddExpense: Cookie 'auth_token' mancante.");
       context.res = {
         status: 401,
-        headers: corsHeaders,
         body: { error: "Non autenticato." },
       };
       return;
@@ -53,7 +52,6 @@ module.exports = async function (context, req) {
     if (!decodedToken || !decodedToken.oid) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
         body: { error: "Token non valido." },
       };
       return;
@@ -73,7 +71,6 @@ module.exports = async function (context, req) {
     if (!amount || !date || !category_id) {
       context.res = {
         status: 400,
-        headers: corsHeaders,
         body: {
           error: "Campi obbligatori mancanti (amount, date, category_id).",
         },
@@ -83,7 +80,6 @@ module.exports = async function (context, req) {
 
     const pool = await connectDB();
 
- 
     await pool
       .request()
       .input("amount", sql.Decimal(10, 2), amount)
@@ -168,18 +164,14 @@ module.exports = async function (context, req) {
       );
     }
 
-
     context.res = {
       status: 201,
-      headers: corsHeaders,
       body: { message: "Spesa aggiunta con successo!" },
     };
-
   } catch (err) {
     context.log.error("Errore critico AddExpense:", err);
     context.res = {
       status: 500,
-      headers: corsHeaders,
       body: { error: `Errore Server: ${err.message}` },
     };
   }

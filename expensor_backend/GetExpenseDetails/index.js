@@ -4,44 +4,27 @@ const { parseCookies } = require("../utils/cookieHelper");
 const jwt = require("jsonwebtoken");
 
 /**
- * Azure Function per recuperare i dettagli di una specifica spesa di gruppo.
- * * **Funzionamento:**
- * 1. **Gestione CORS:** Verifica origine e preflight CORS con credenziali.
- * 2. **Sicurezza:** Verifica che la richiesta provenga da un utente autenticato tramite cookie.
- * 3. **Join Dati:** Esegue una query SQL con `JOIN` sulla tabella `users` per ottenere il nome leggibile di chi ha pagato.
- * * @module GroupExpenses
- * @param {object} context - Il contesto di esecuzione di Azure Function.
- * @param {object} req - L'oggetto richiesta HTTP.
- * @param {string} req.headers.cookie - Il cookie contenente il token di sessione.
- * @param {string} req.query.groupId - L'ID del gruppo.
- * @param {string} req.query.expenseId - L'ID univoco della spesa da recuperare.
- * * @returns {Promise<void>}
- * - **200 OK**: Restituisce l'oggetto spesa completo.
- * - **204 No Content**: Preflight CORS.
- * - **400 Bad Request**: Parametri mancanti.
- * - **401 Unauthorized**: Cookie mancante o token invalido.
- * - **500 Internal Server Error**: Errore di connessione o query.
+ * Azure Function per recuperare i dettagli puntuali di una specifica spesa di gruppo.
+ *
+ * **Flusso di esecuzione:**
+ * 1. **Autenticazione:** Verifica la validità del token JWT estratto dai cookie.
+ * 2. **Validazione Input:** Controlla la presenza dei parametri `groupId` ed `expenseId` nella query string dell'URL.
+ * 3. **Query Relazionale:** Esegue una `SELECT` con `JOIN` sulla tabella `users`. Questo permette di restituire, oltre ai dati della spesa, anche il nome leggibile (`paid_by_name`) dell'utente che ha saldato il conto.
+ *
+ * @module GroupExpenses
+ * @param {Object} context - Il contesto di esecuzione di Azure Function.
+ * @param {Object} req - L'oggetto richiesta HTTP.
+ * @param {Object} req.query - I parametri della query string (es. `?groupId=1&expenseId=5`).
+ * @param {string|number} req.query.groupId - L'ID del gruppo a cui appartiene la spesa.
+ * @param {string|number} req.query.expenseId - L'ID univoco della spesa da recuperare.
+ *
+ * @returns {Promise<void>} Imposta `context.res` con uno dei seguenti stati:
+ * - **200 OK**: Restituisce l'oggetto spesa completo (incluso il campo calcolato `paid_by_name`).
+ * - **400 Bad Request**: Parametri query mancanti.
+ * - **401 Unauthorized**: Cookie `auth_token` mancante o invalido.
+ * - **500 Internal Server Error**: Errore di connessione al DB o query fallita.
  */
 module.exports = async function (context, req) {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN;
-  const requestOrigin = req.headers["origin"];
-
-  const corsHeaders = {
-    "Access-Control-Allow-Origin":
-      requestOrigin === allowedOrigin ? requestOrigin : "null",
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-
-  if (req.method === "OPTIONS") {
-    context.res = {
-      status: 204,
-      headers: corsHeaders,
-    };
-    return;
-  }
-
   try {
     const cookies = parseCookies(req);
     const token = cookies["auth_token"];
@@ -49,7 +32,7 @@ module.exports = async function (context, req) {
     if (!token) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
+
         body: { error: "Non autenticato." },
       };
       return;
@@ -59,7 +42,7 @@ module.exports = async function (context, req) {
     if (!decodedToken || !decodedToken.oid) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
+
         body: { error: "Token non valido." },
       };
       return;
@@ -72,7 +55,7 @@ module.exports = async function (context, req) {
     if (!groupId || !expenseId) {
       context.res = {
         status: 400,
-        headers: corsHeaders,
+
         body: { error: "Parametri groupId o expenseId mancanti." },
       };
       return;
@@ -91,7 +74,7 @@ module.exports = async function (context, req) {
 
     context.res = {
       status: 200,
-      headers: corsHeaders,
+
       body: result.recordset[0],
     };
   } catch (err) {
@@ -99,7 +82,7 @@ module.exports = async function (context, req) {
 
     context.res = {
       status: 500,
-      headers: corsHeaders,
+
       body: { error: `Errore nel recupero delle spese: ${err.message}` },
     };
   }

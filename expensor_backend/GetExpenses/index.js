@@ -3,24 +3,25 @@ const sql = require("mssql");
 const { parseCookies } = require("../utils/cookieHelper");
 const jwt = require("jsonwebtoken");
 
+/**
+ * Azure Function per recuperare lo storico delle spese personali dell'utente autenticato.
+ *
+ * **Flusso di esecuzione:**
+ * 1. **Autenticazione:** Estrae il token JWT dal cookie `auth_token` per identificare l'utente (`oid`).
+ * 2. **Recupero Dati:** Esegue una query sulla tabella `expenses` filtrando per `user_id`.
+ * 3. **Arricchimento Dati:** Effettua una `INNER JOIN` con la tabella `categories` per includere il nome leggibile della categoria (`category_name`) nei risultati.
+ * 4. **Ordinamento:** Restituisce i risultati ordinati per data decrescente (dal più recente).
+ *
+ * @module Expenses
+ * @param {Object} context - Il contesto di esecuzione di Azure Function.
+ * @param {Object} req - L'oggetto richiesta HTTP.
+ *
+ * @returns {Promise<void>} Imposta `context.res` con uno dei seguenti stati:
+ * - **200 OK**: Restituisce un array JSON contenente le spese (con dettagli categoria).
+ * - **401 Unauthorized**: Cookie mancante o token non valido.
+ * - **500 Internal Server Error**: Errore durante l'esecuzione della query.
+ */
 module.exports = async function (context, req) {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN;
-  const requestOrigin = req.headers["origin"];
-  const originToUse =
-    requestOrigin === allowedOrigin ? requestOrigin : allowedOrigin;
-
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": originToUse,
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-
-  if (req.method === "OPTIONS") {
-    context.res = { status: 204, headers: corsHeaders };
-    return;
-  }
-
   try {
     const cookies = parseCookies(req);
     const token = cookies["auth_token"];
@@ -28,7 +29,7 @@ module.exports = async function (context, req) {
     if (!token) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
+
         body: { error: "Non autenticato" },
       };
       return;
@@ -57,14 +58,14 @@ module.exports = async function (context, req) {
 
     context.res = {
       status: 200,
-      headers: corsHeaders,
+
       body: result.recordset,
     };
   } catch (err) {
     context.log.error("GetExpenses: Errore", err);
     context.res = {
       status: 500,
-      headers: corsHeaders,
+
       body: { error: err.message },
     };
   }

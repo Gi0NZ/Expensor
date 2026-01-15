@@ -8,8 +8,7 @@
       "name": "req",
       "methods": [
         "get",
-        "post",
-        "options"
+        "post"
       ],
       "route": "GetRecentExpenses"
     },

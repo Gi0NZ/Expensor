@@ -4,54 +4,38 @@ const { parseCookies } = require("../utils/cookieHelper");
 const jwt = require("jsonwebtoken");
 
 /**
- * Azure Function per rimuovere un membro da un gruppo.
- * * **Logica di Sicurezza (Query Atomica):**
- * 1. **Verifica Permessi:** Utilizza una subquery `EXISTS` per garantire che chi fa la richiesta (identificato dal Cookie) sia l'**Admin** del gruppo.
- * 2. **Output Delete:** Utilizza la clausola `OUTPUT` per restituire l'ID dell'utente cancellato solo se l'operazione ha successo.
- * 3. **Risultato:** Se l'utente richiedente non è admin, la condizione WHERE fallisce e non viene restituito alcun ID (permettendo di lanciare un errore 403).
- * * @module GroupMembers
- * @param {object} context - Il contesto di esecuzione di Azure Function.
- * @param {object} req - L'oggetto richiesta HTTP.
- * @param {string} req.headers.cookie - Il cookie contenente il token di sessione.
- * @param {object} req.body - Il corpo della richiesta.
+ * Azure Function per rimuovere (espellere) un membro da un gruppo esistente.
+ *
+ * **Sicurezza e Logica SQL (Atomic Check):**
+ * La funzione esegue una `DELETE` condizionata per garantire che solo l'amministratore possa rimuovere membri:
+ * 1. **Verifica Permessi:** La clausola `WHERE EXISTS` controlla che l'utente richiedente (`@reqId`) sia l'Admin del gruppo.
+ * 2. **Verifica Esito:** Utilizza `OUTPUT Deleted.user_id` per restituire l'ID del record eliminato.
+ * 3. **Gestione Errori:** Se la query non restituisce righe, significa che il membro non esisteva **oppure** che il richiedente non era autorizzato. In entrambi i casi, viene restituito un errore 403 per sicurezza.
+ *
+ * @module GroupMembers
+ * @param {Object} context - Il contesto di esecuzione di Azure Function.
+ * @param {Object} req - L'oggetto richiesta HTTP.
+ * @param {Object} req.body - Il payload della richiesta.
  * @param {number} req.body.groupId - L'ID del gruppo da cui rimuovere il membro.
- * @param {string} req.body.removedId - L'ID Microsoft dell'utente da espellere.
- * * @returns {Promise<void>}
- * - **200 OK**: Membro rimosso correttamente.
- * - **400 Bad Request**: Dati mancanti.
- * - **401 Unauthorized**: Cookie mancante o token invalido.
- * - **403 Forbidden**: Utente non autorizzato (non è admin) o membro non trovato.
- * - **500 Internal Server Error**: Errore server.
+ * @param {string} req.body.removedId - L'ID Microsoft (UUID) dell'utente da espellere.
+ *
+ * @returns {Promise<void>} Imposta `context.res` con uno dei seguenti stati:
+ * - **200 OK**: Membro rimosso con successo.
+ * - **400 Bad Request**: Parametri `groupId` o `removedId` mancanti.
+ * - **401 Unauthorized**: Cookie mancante o token non valido.
+ * - **403 Forbidden**: Operazione fallita (Utente non admin o membro non trovato nel gruppo).
+ * - **500 Internal Server Error**: Errore server o database.
  */
-
 module.exports = async function (context, req) {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN;
-  const requestOrigin = req.headers["origin"];
-  const corsHeaders = {
-    "Access-Control-Allow-Origin":
-      requestOrigin === allowedOrigin ? requestOrigin : "null",
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-
-  if (req.method === "OPTIONS") {
-    context.res = {
-      status: 204,
-      headers: corsHeaders,
-    };
-    return;
-  }
-
   try {
     const cookies = parseCookies(req);
-    const token = cookies['auth_token'];
+    const token = cookies["auth_token"];
 
     if (!token) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
-        body: { error: "Non autenticato." }
+
+        body: { error: "Non autenticato." },
       };
       return;
     }
@@ -60,8 +44,8 @@ module.exports = async function (context, req) {
     if (!decodedToken || !decodedToken.oid) {
       context.res = {
         status: 401,
-        headers: corsHeaders,
-        body: { error: "Token non valido." }
+
+        body: { error: "Token non valido." },
       };
       return;
     }
@@ -72,7 +56,7 @@ module.exports = async function (context, req) {
     if (!groupId || !removedId) {
       context.res = {
         status: 400,
-        headers: corsHeaders,
+
         body: {
           error: "Campi obbligatori mancanti (groupId, removedId).",
         },
@@ -99,17 +83,20 @@ module.exports = async function (context, req) {
     `);
 
     if (result.recordset.length === 0) {
-        context.res = {
-            status: 403,
-            headers: corsHeaders,
-            body: { error: "Operazione fallita: Non sei Admin o l'utente non esiste nel gruppo." }
-        };
-        return;
+      context.res = {
+        status: 403,
+
+        body: {
+          error:
+            "Operazione fallita: Non sei Admin o l'utente non esiste nel gruppo.",
+        },
+      };
+      return;
     }
 
     context.res = {
       status: 200,
-      headers: corsHeaders,
+
       body: { message: "Membro gruppo eliminato con successo!" },
     };
   } catch (err) {
@@ -117,7 +104,7 @@ module.exports = async function (context, req) {
 
     context.res = {
       status: 500,
-      headers: corsHeaders,
+
       body: { error: `Errore SQL: ${err.message}` },
     };
   }

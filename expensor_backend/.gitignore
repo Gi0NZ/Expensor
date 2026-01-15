@@ -101,5 +101,11 @@ __azurite_db*__.json
 #cartella routes - vecchia implementazione
 .routes
 
+#cartella middleware - vecchia implementazione con auth JWT
+.middleware
+
+#Inutile - serviva per la struttura non serverless
+server.js
+
 # File credenziali 
 .env

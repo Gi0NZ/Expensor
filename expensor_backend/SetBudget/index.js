@@ -3,22 +3,28 @@ const sql = require("mssql");
 const { parseCookies } = require("../utils/cookieHelper");
 const jwt = require("jsonwebtoken");
 
+/**
+ * Azure Function per configurare o aggiornare il budget mensile dell'utente.
+ *
+ * **Logica di Business (Upsert & Reset):**
+ * 1. **Identificazione:** L'utente viene identificato tramite il token JWT nel cookie `auth_token`.
+ * 2. **Gestione Dati (MERGE):** Utilizza lo statement SQL `MERGE` per gestire in modo atomico due scenari:
+ * - **Inserimento:** Se l'utente non ha un budget, crea una nuova riga.
+ * - **Aggiornamento:** Se il budget esiste, aggiorna il valore `monthly_limit`.
+ * 3. **Reset Notifiche:** In caso di aggiornamento (UPDATE), imposta forzatamente `last_email_sent_month` a `NULL`.
+ * *Scopo:* Se l'utente modifica il proprio budget (es. lo alza), il sistema deve dimenticare di aver già inviato un'email di allerta questo mese, permettendo l'invio di nuove notifiche se il nuovo limite viene superato.
+ *
+ * @module Budget
+ * @param {Object} context - Il contesto di esecuzione di Azure Function.
+ * @param {Object} req - L'oggetto richiesta HTTP.
+ * @param {Object} req.body - Il payload della richiesta.
+ * @param {number} req.body.monthly_limit - Il nuovo tetto massimo di spesa mensile desiderato.
+ *
+ * @returns {Promise<void>} Imposta `context.res` con uno dei seguenti stati:
+ * - **200 OK**: Budget salvato o aggiornato correttamente.
+ * - **500 Internal Server Error**: Errore generico (include errore di autenticazione o errore SQL in questa implementazione).
+ */
 module.exports = async function (context, req) {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN;
-  const requestOrigin = req.headers["origin"];
-  const corsHeaders = {
-    "Access-Control-Allow-Origin":
-      requestOrigin === allowedOrigin ? requestOrigin : "null",
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-
-  if (req.method === "OPTIONS") {
-    context.res = { status: 204, headers: corsHeaders };
-    return;
-  }
-
   try {
     const cookies = parseCookies(req);
     const token = cookies["auth_token"];
@@ -45,13 +51,13 @@ module.exports = async function (context, req) {
 
     context.res = {
       status: 200,
-      headers: corsHeaders,
+
       body: { message: "Budget salvato!" },
     };
   } catch (err) {
     context.res = {
       status: 500,
-      headers: corsHeaders,
+
       body: { error: err.message },
     };
   }
