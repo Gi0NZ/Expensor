@@ -81,8 +81,6 @@ module.exports = async function (context, req) {
       { expiresIn: "8h" }
     );
 
-    //const isProduction = process.env.NODE_ENV === "production";
-
     context.res = {
       status: 200,
       headers: corsHeaders,
