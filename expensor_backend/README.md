@@ -22,5 +22,5 @@ expensor_backend\
    ├──  budgetMailSender.js    #Mail superamento budget
    └── cookieHelper.js         #Trasforma cookie string in JSON
 ├──  db.js                      #Gestione connessione DB
-└── setup-db.js                 #Setup struttura DB
+├── setup-db.js                 #Setup struttura DB
 └── README.md
