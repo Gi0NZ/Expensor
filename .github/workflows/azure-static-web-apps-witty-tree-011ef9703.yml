@@ -32,6 +32,9 @@ jobs:
           api_location: "./expensor_frontend/src/services/api.js" # Api source code path - optional
           output_location: "build" # Built app content directory - optional
           ###### End of Repository/Build Configurations ######
+        env:
+          REACT_APP_API_BASE_URL: https://expensor-functions-fbeyacc6fqgfd6be.italynorth-01.azurewebsites.net
+          CI: false
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
