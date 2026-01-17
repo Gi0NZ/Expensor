@@ -95,6 +95,7 @@ module.exports = async function (context, req) {
       return;
     }
 
+
     try {
       await pool
         .request()
@@ -123,8 +124,19 @@ module.exports = async function (context, req) {
           WHERE u.microsoft_id = @uid AND g.id = @gid
       `);
 
+    const adminInfo = await pool
+    .request()
+    .input("m_id", sql.NVarChar, admin)
+    .query(`
+      SELECT * 
+      FROM users u
+      WHERE u.microsoft_id = @m_id
+      `)
+
     if (infoResult.recordset.length > 0) {
       const { email, user_name, group_name } = infoResult.recordset[0];
+
+      const {adminMail, adminName} = adminInfo.recordset[0];
 
       const resend = new Resend(process.env.RESEND_API_KEY);
       const senderEmail = process.env.SENDER_EMAIL;
@@ -138,7 +150,7 @@ module.exports = async function (context, req) {
               <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
                   <h2 style="color: #4CAF50;">Benvenuto nel gruppo!</h2>
                   <p>Ciao <strong>${user_name}</strong>,</p>
-                  <p>Sei stato aggiunto con successo al gruppo di spesa <strong>"${group_name}"</strong> su Expensor.</p>
+                  <p>Sei stato aggiunto con successo al gruppo di spesa <strong>"${group_name}"</strong> da ${adminName} (${adminMail}) su Expensor.</p>
                   <p>Accedi subito per vedere le spese e aggiungere la tua parte.</p>
                   <br/>
                   <a href="${groupLink}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Vai al Gruppo</a>

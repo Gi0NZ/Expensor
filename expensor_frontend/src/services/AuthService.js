@@ -63,7 +63,7 @@ export const localLogout = async () => {
   } catch (error) {
     console.error("Errore logout backend:", error);
   } finally {
-    localStorage.clear(); // Pulisce userProfile, navbarCollapsed, e cache MSAL se presente
+    localStorage.clear(); 
 
     const account = msalInstance.getActiveAccount();
     if (account) {
