@@ -7,19 +7,19 @@ import {
   useLocation,
 } from "react-router-dom";
 import { MsalProvider, useMsal } from "@azure/msal-react";
-import { msalInstance } from "./authConfig";
+import { msalInstance, loginRequest } from "./authConfig";
+import { EventType } from "@azure/msal-browser";
+
 import Homepage from "./pages/Homepage";
 import AddExpense from "./pages/AddExpense";
 import Login from "./pages/Login";
-import { loginRequest } from "./authConfig";
-import { EventType } from "@azure/msal-browser";
 import ShowExpenses from "./pages/ShowExpenses";
 import GroupExpenses from "./pages/GroupExpenses";
 import GroupHandling from "./pages/GroupHandling";
 import ExpenseHandling from "./pages/ExpenseHandling";
 import ProfilePage from "./pages/ProfilePage";
 
-import { saveUserToBackend } from "./services/api"; 
+import { saveUserToBackend } from "./services/api";
 
 const AppContent = () => {
   const { instance } = useMsal();
@@ -27,10 +27,10 @@ const AppContent = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasToken, setHasToken] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isBackendReady, setIsBackendReady] = useState(false);
 
   useEffect(() => {
     let mounted = true;
-
 
     const cbId = instance.addEventCallback(async (event) => {
       if (!mounted) return;
@@ -39,20 +39,14 @@ const AppContent = () => {
         const acc = event.payload?.account;
         if (acc) {
           try {
-            console.log("Login MSAL riuscito. Sincronizzazione con il Backend...");
-            
-
             await saveUserToBackend({
-                microsoft_id: acc.localAccountId, 
-                email: acc.username,
-                name: acc.name
+              microsoft_id: acc.localAccountId,
+              email: acc.username,
+              name: acc.name,
             });
-            
-            console.log("Utente salvato e Cookie ricevuto!");
-
+            setIsBackendReady(true);
           } catch (error) {
-            console.error("Errore critico salvataggio utente:", error);
-
+            console.error(error);
           }
 
           instance.setActiveAccount(acc);
@@ -74,10 +68,21 @@ const AppContent = () => {
 
       const all = instance.getAllAccounts();
       const active = instance.getActiveAccount() || all[0] || null;
-      
+
       if (active) {
         instance.setActiveAccount(active);
         setIsAuthenticated(true);
+
+        try {
+          await saveUserToBackend({
+            microsoft_id: active.localAccountId,
+            email: active.username,
+            name: active.name,
+          });
+          setIsBackendReady(true);
+        } catch (err) {
+          console.error(err);
+        }
       } else {
         setIsAuthenticated(false);
       }
@@ -93,6 +98,7 @@ const AppContent = () => {
           sessionStorage.setItem("accessToken", token);
         } catch {}
       }
+
       if (mounted) {
         setHasToken(!!token);
         setLoading(false);
@@ -106,22 +112,18 @@ const AppContent = () => {
   }, [instance, location.pathname]);
 
   if (loading) {
-    return <h1>🔄 Verifica autenticazione...</h1>;
+    return <h1>Caricamento...</h1>;
   }
+
+  const canShowApp = isAuthenticated && hasToken && isBackendReady;
 
   return (
     <Routes>
       <Route
         path="/login"
-        element={
-          isAuthenticated && hasToken ? (
-            <Navigate to="/homepage" replace />
-          ) : (
-            <Login />
-          )
-        }
+        element={canShowApp ? <Navigate to="/homepage" replace /> : <Login />}
       />
-      {isAuthenticated && hasToken ? (
+      {canShowApp ? (
         <>
           <Route path="/homepage" element={<Homepage />} />
           <Route path="/addExpense" element={<AddExpense />} />
@@ -133,11 +135,19 @@ const AppContent = () => {
             element={<ExpenseHandling />}
           />
           <Route path="/profilePage" element={<ProfilePage />} />
-
           <Route path="*" element={<Navigate to="/homepage" replace />} />
         </>
       ) : (
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route
+          path="*"
+          element={
+            isAuthenticated ? (
+              <h1>Sincronizzazione in corso...</h1>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
       )}
     </Routes>
   );
@@ -154,7 +164,7 @@ const App = () => {
   }, []);
 
   if (!isInitialized) {
-    return <h1>Caricamento...</h1>;
+    return <h1>Inizializzazione...</h1>;
   }
 
   return (

@@ -8,7 +8,6 @@
   --text-light: #7f8c8d;
 }
 
-
 .expense-handling-wrapper {
   position: fixed;
   top: 0;
@@ -18,18 +17,14 @@
   width: 100vw;
   height: 100vh;
   background-color: var(--bg-light);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   display: flex;
   overflow: hidden;
   z-index: 100;
-
-  position: fixed;
 }
 
-
 .expense-handling-wrapper::before {
-  content: '€';
+  content: "€";
   position: absolute;
   top: -80px;
   right: -50px;
@@ -44,7 +39,7 @@
 }
 
 .expense-handling-wrapper::after {
-  content: '$';
+  content: "$";
   position: absolute;
   bottom: -50px;
   left: 220px;
@@ -64,15 +59,12 @@
   height: 100%;
   padding: 30px;
   box-sizing: border-box;
-
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  /* Scroll interno */
   position: relative;
   z-index: 1;
 }
-
 
 .expense-handling-header {
   text-align: center;
@@ -99,7 +91,6 @@
   margin-top: 5px;
 }
 
-
 .expense-handling-row {
   display: flex;
   flex-direction: row;
@@ -108,8 +99,8 @@
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+  align-items: stretch;
 }
-
 
 .expense-handling-card {
   background: white;
@@ -128,18 +119,22 @@
   color: var(--text-dark);
   font-size: 1.3rem;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .expense-handling-col-left {
   flex: 1;
   min-width: 320px;
+  height: fit-content;
 }
 
 .expense-handling-col-right {
   flex: 2;
   min-width: 400px;
+  height: 500px;
+  display: flex;
+  flex-direction: column;
 }
-
 
 .expense-handling-form-group {
   margin-bottom: 20px;
@@ -199,6 +194,7 @@
   width: 100%;
   margin-bottom: 20px;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .expense-progress-bar {
@@ -206,17 +202,19 @@
   transition: width 0.5s ease-in-out;
 }
 
-
 .expense-splits-list {
-  max-height: 400px;
+  flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 8px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  margin-bottom: 15px;
 }
 
 .expense-split-item {
+  position: relative;
   background-color: #fff;
   border: 1px solid #eee;
   border-radius: 10px;
@@ -225,6 +223,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: all 0.2s ease-in-out;
+  flex-shrink: 0;
 }
 
 .expense-split-details strong {
@@ -238,10 +238,60 @@
   color: var(--text-light);
 }
 
-.expense-split-amount {
+.expense-split-action-wrapper {
+  position: relative;
+  min-width: 100px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.expense-split-amount-display {
   font-weight: 700;
   color: var(--text-dark);
   font-size: 1.2rem;
+  display: block;
+}
+
+.expense-split-delete-btn {
+  display: none;
+  background-color: var(--danger-color);
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.expense-split-delete-btn:hover {
+  background-color: #c0392b;
+}
+
+.expense-split-item.admin-view:hover .expense-split-amount-display {
+  display: none;
+}
+
+.expense-split-item.admin-view:hover .expense-split-delete-btn {
+  display: block;
+}
+
+.expense-split-item.admin-view:hover {
+  background-color: #fdfdfd;
+  border-color: var(--danger-color);
+}
+
+.expense-handling-footer {
+  margin-top: auto;
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  background-color: white;
 }
 
 @media (max-width: 1000px) {
@@ -250,9 +300,15 @@
     align-items: center;
   }
 
-  .expense-handling-col-left, .expense-handling-col-right {
+  .expense-handling-col-left,
+  .expense-handling-col-right {
     width: 100%;
     max-width: 700px;
+    height: auto;
+  }
+
+  .expense-handling-col-right {
+    height: 500px;
   }
 }
 

@@ -105,9 +105,9 @@ export async function removeExpense(id) {
  */
 export async function getExpensesByCategory(filters = {}) {
   const response = await fetch(`${API_BASE_URL}/GetExpensesByCategory`, {
-    method: "POST",
+    method: "GET",
     headers: headers,
-    body: JSON.stringify(filters), 
+    //body: JSON.stringify(filters), 
     credentials: "include", 
   });
 
@@ -599,6 +599,35 @@ export async function addExpenseSplit({ expense_id, user_id, amount }) {
     throw err;
   }
 }
+
+/**
+ * Rimuove una quota di spesa per un utente.
+ * @param {object} params
+ * @param {number} params.expense_id
+ * @param {string} params.user_id
+ * @param {number} params.amount
+ * @returns {Promise<object>} Messaggio successo.
+ */
+export async function removeExpenseSplit({ expenseId, userId }) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/RemoveExpenseSplit`, {
+      method: "POST",
+      body: JSON.stringify({ expense_id: expenseId, user_id: userId }),
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Errore HTTP ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+}
+
 
 /**
  * Elimina un gruppo intero (Solo Admin).

@@ -59,11 +59,7 @@ module.exports = async function (context, req) {
 
     const currentUserId = decodedToken.oid;
 
-    const userEmail =
-      decodedToken.email ||
-      decodedToken.preferred_username ||
-      decodedToken.unique_name ||
-      req.body.email;
+    const userEmail = decodedToken.email;
     const userName = decodedToken.name || req.body.name || "Utente";
 
     const { amount, date, description, category_id } = req.body;

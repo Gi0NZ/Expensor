@@ -8,7 +8,6 @@
   --text-light: #7f8c8d;
 }
 
-
 .group-handling-wrapper {
   position: fixed;
   top: 0;
@@ -18,19 +17,17 @@
   width: 100vw;
   height: 100vh;
   background-color: var(--bg-light);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 
   display: flex;
   overflow: hidden;
   z-index: 100;
 
-
   position: fixed;
 }
 
-
 .group-handling-wrapper::before {
-  content: '€';
+  content: "€";
   position: absolute;
   top: -80px;
   right: -50px;
@@ -44,9 +41,8 @@
   z-index: 0;
 }
 
-
 .group-handling-wrapper::after {
-  content: '$';
+  content: "$";
   position: absolute;
   bottom: -50px;
   left: 220px;
@@ -59,7 +55,6 @@
   pointer-events: none;
   z-index: 0;
 }
-
 
 .group-handling-content {
   flex: 1;
@@ -76,7 +71,6 @@
   z-index: 1;
 }
 
-
 .group-handling-title {
   font-size: 2.5rem;
   color: var(--text-dark);
@@ -86,7 +80,6 @@
   text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.5);
 }
 
-
 .group-handling-section-title {
   font-size: 1.8rem;
   color: var(--text-dark);
@@ -94,14 +87,12 @@
   margin-bottom: 25px;
   padding-bottom: 15px;
 
-
   text-align: center;
   border-bottom: 2px solid rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 800px;
   align-self: center;
 }
-
 
 .group-handling-section-row {
   display: flex;
@@ -112,7 +103,6 @@
   max-width: 1200px;
   margin: 0 auto;
 }
-
 
 .group-handling-card {
   background: white;
@@ -133,7 +123,6 @@
   text-align: center;
 }
 
-
 .group-handling-col-left {
   flex: 1;
   min-width: 320px;
@@ -143,7 +132,6 @@
   flex: 2;
   min-width: 400px;
 }
-
 
 .group-handling-form-group {
   margin-bottom: 20px;
@@ -196,9 +184,8 @@
   transform: translateY(0);
 }
 
-
 .group-handling-list {
-  max-height: 400px;
+  max-height: 250px;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 8px;
@@ -206,7 +193,6 @@
   flex-direction: column;
   gap: 12px;
 }
-
 
 .group-handling-list::-webkit-scrollbar {
   width: 6px;
@@ -220,7 +206,6 @@
 .group-handling-list::-webkit-scrollbar-track {
   background: #f9f9f9;
 }
-
 
 .group-handling-item {
   text-decoration: none;
@@ -244,7 +229,6 @@
   transform: translateY(-2px);
 }
 
-
 .group-handling-item-details strong {
   display: block;
   color: var(--text-dark);
@@ -256,7 +240,6 @@
   font-size: 0.9rem;
   color: var(--text-light);
 }
-
 
 .group-handling-action-wrapper {
   position: relative;
@@ -272,7 +255,6 @@
   font-size: 1.1rem;
   display: block;
 }
-
 
 .group-handling-delete-btn {
   display: none;
@@ -291,21 +273,22 @@
   background-color: #c0392b;
 }
 
+/* --- LOGICA HOVER CONDIZIONALE --- */
 
-.group-handling-item:not(.read-only):hover .group-handling-amount-display {
+/* Nascondi l'importo SOLO se è vista admin */
+.group-handling-item.admin-view:hover .group-handling-amount-display {
   display: none;
 }
 
-
-.group-handling-item:not(.read-only):hover .group-handling-delete-btn {
+/* Mostra il bottone SOLO se è vista admin */
+.group-handling-item.admin-view:hover .group-handling-delete-btn {
   display: block;
 }
 
-
-.group-handling-item.read-only:hover .group-handling-amount-display {
-  display: block;
+/* (Facoltativo) Highlight rosso se sei admin e vuoi cancellare */
+.group-handling-item.admin-view:hover {
+  border-color: var(--danger-color);
 }
-
 
 @media (max-width: 1100px) {
   .group-handling-section-row {
@@ -313,7 +296,8 @@
     align-items: center;
   }
 
-  .group-handling-col-left, .group-handling-col-right {
+  .group-handling-col-left,
+  .group-handling-col-right {
     width: 100%;
     max-width: 700px;
   }
@@ -325,9 +309,16 @@
     padding: 15px;
   }
 
-  .group-handling-delete-btn {
+  /* Su mobile, l'admin vede sempre il tasto elimina (no hover) */
+  .group-handling-item.admin-view .group-handling-delete-btn {
     display: block;
     opacity: 1;
+  }
+
+  /* Su mobile, l'admin vede anche l'importo affiancato (se c'è spazio) */
+  .group-handling-item.admin-view .group-handling-amount-display {
+    display: none;
+    /* O block, a seconda della preferenza */
   }
 
   .group-handling-amount-display {

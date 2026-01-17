@@ -7,9 +7,10 @@ import {
   getGroupMembers,
   addExpenseSplit,
   getGroupAdmin,
+  removeExpenseSplit,
 } from "../services/api";
 import "../styles/ExpenseHandling.css";
-import { showError, showSuccess } from "../components/alerts";
+import { showError, showSuccess, showConfirm } from "../components/alerts";
 
 const ExpenseHandling = () => {
   const params = useParams();
@@ -60,7 +61,7 @@ const ExpenseHandling = () => {
           : adminData.admin;
         setGroupAdminId(adminId);
       } catch (err) {
-        console.error("Errore caricamento dati spesa:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -125,8 +126,30 @@ const ExpenseHandling = () => {
       const updatedSplits = await getExpenseSplits({ expenseId, groupId });
       setSplits(updatedSplits);
     } catch (err) {
-      console.error("Errore salvataggio split:", err);
+      console.error(err);
       showError(err.message || "Errore durante l'assegnazione della quota");
+    }
+  };
+
+  const handleDeleteSplit = async (e, userId) => {
+    e.preventDefault();
+
+    const isConfirmed = await showConfirm(
+      "Rimuovere quota?",
+      "Sei sicuro di voler rimuovere questa quota di spesa?"
+    );
+
+    if (!isConfirmed) return;
+
+    try {
+      await removeExpenseSplit({ expenseId, userId });
+      showSuccess("Quota rimossa con successo");
+
+      const updatedSplits = await getExpenseSplits({ expenseId, groupId });
+      setSplits(updatedSplits);
+    } catch (err) {
+      console.error(err);
+      showError("Errore durante l'eliminazione della quota");
     }
   };
 
@@ -166,7 +189,9 @@ const ExpenseHandling = () => {
           </h2>
           <p className="expense-handling-info">
             Pagata da:{" "}
-            <strong>{expense.paid_by_name || expense.paid_by || "..."}</strong>
+            <strong>
+              {expense.paid_by_name || expense.paid_by || "..."}
+            </strong>
           </p>
         </div>
 
@@ -247,7 +272,7 @@ const ExpenseHandling = () => {
           </div>
 
           <div className="expense-handling-card expense-handling-col-right">
-            <h3>👥 Ripartizione Quote</h3>
+            <h3>👥 Pagamenti Ricevuti</h3>
 
             <div className="expense-progress-container">
               <div
@@ -272,7 +297,12 @@ const ExpenseHandling = () => {
                 </p>
               ) : (
                 splits.map((split) => (
-                  <div key={split.user_id} className="expense-split-item">
+                  <div
+                    key={split.user_id}
+                    className={`expense-split-item ${
+                      isUserAdmin ? "admin-view" : ""
+                    }`}
+                  >
                     <div className="expense-split-details">
                       <strong>{split.user_name}</strong>
                       <span>
@@ -284,24 +314,27 @@ const ExpenseHandling = () => {
                       </span>
                     </div>
 
-                    <div className="expense-split-amount">
-                      {parseFloat(split.amount).toFixed(2)} €
+                    <div className="expense-split-action-wrapper">
+                      <span className="expense-split-amount-display">
+                        {parseFloat(split.amount).toFixed(2)} €
+                      </span>
+
+                      {isUserAdmin && (
+                        <button
+                          className="expense-split-delete-btn"
+                          onClick={(e) => handleDeleteSplit(e, split.user_id)}
+                        >
+                          Elimina
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))
               )}
             </div>
 
-            <div
-              style={{
-                marginTop: "20px",
-                borderTop: "1px solid #eee",
-                paddingTop: "15px",
-                display: "flex",
-                justifyContent: "space-between",
-              }}
-            >
-              <strong>Totale Assegnato:</strong>
+            <div className="expense-handling-footer">
+              <strong>Totale Restituito:</strong>
               <span
                 style={{
                   color: remaining !== 0 ? "#f39c12" : "#27ae60",
