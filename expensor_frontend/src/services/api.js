@@ -708,17 +708,24 @@ export async function deleteProfileImage(microsoft_id) {
 
 /**
  * Recupera lo stato attuale del budget utente dal backend.
- * Restituisce il limite impostato e quanto è stato speso nel mese corrente.
- * * @returns {Promise<Object|null>} Oggetto contenente { monthly_limit, current_spent } o null se la richiesta fallisce.
+ * Gestisce correttamente il caso in cui il backend risponde con status 200 ma corpo vuoto (nessun budget impostato).
+ * * @returns {Promise<Object|null>} Oggetto contenente { monthly_limit, current_spent } oppure null se non impostato o in caso di errore.
  */
 export async function getBudgetStatus() {
-  const res = await fetch(`${API_BASE_URL}/GetBudgetStatus`, {
-    method: "GET",
-    credentials: "include", // Fondamentale per inviare i cookie di auth
-  });
+  try {
+    const res = await fetch(`${API_BASE_URL}/GetBudgetStatus`, {
+      method: "GET",
+      credentials: "include",
+    });
 
-  if (!res.ok) return null; // Se c'è errore (es. 401 o 500), restituisce null per non rompere la UI
-  return await res.json();
+    if (!res.ok) return null;
+
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
 }
 
 /**
