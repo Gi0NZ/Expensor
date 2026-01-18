@@ -126,7 +126,7 @@ module.exports = async function (context, req) {
 
     const adminInfo = await pool
     .request()
-    .input("m_id", sql.NVarChar, admin)
+    .input("m_id", sql.NVarChar, groupAdmin)
     .query(`
       SELECT * 
       FROM users u
@@ -136,7 +136,8 @@ module.exports = async function (context, req) {
     if (infoResult.recordset.length > 0) {
       const { email, user_name, group_name } = infoResult.recordset[0];
 
-      const {adminMail, adminName} = adminInfo.recordset[0];
+      const adminMail = adminInfo.recordset[0].email;
+      const adminName = adminInfo.recordset[0].name;
 
       const resend = new Resend(process.env.RESEND_API_KEY);
       const senderEmail = process.env.SENDER_EMAIL;
