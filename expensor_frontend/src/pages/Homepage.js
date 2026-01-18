@@ -53,7 +53,7 @@ const Homepage = () => {
 
         <div className="dashboard-grid">
           <div className="chart-container">
-            <h2 className="chart-title">📌 Distribuzione delle spese</h2>
+            <h2 className="chart-title">📌 Distribuzione spese (30gg)</h2>
 
             {loading ? (
               <p>🔄 Caricamento dati...</p>
