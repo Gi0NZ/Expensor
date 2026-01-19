@@ -8,8 +8,10 @@ const appInsights = new ApplicationInsights({
         connectionString: connString,
         extensions: [reactPlugin],
         enableAutoRouteTracking: true, 
-        enableCorsCorrelation: true,   
+        enableCorsCorrelation: true,  
+    } 
 });
+    
 
 appInsights.loadAppInsights();
 
