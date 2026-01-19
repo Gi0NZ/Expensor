@@ -70,6 +70,9 @@ const GroupHandling = () => {
 
   const handleAddExpense = async (e) => {
     e.preventDefault();
+
+    if (!isUserAdmin) return;
+
     try {
       const group_id = group[0].id;
 
@@ -93,12 +96,15 @@ const GroupHandling = () => {
 
   const handleAddMember = async (e) => {
     e.preventDefault();
+
+    if (!isUserAdmin) return;
+
     try {
       const usersFound = await getUserByMail(newMemberEmail);
 
       if (!usersFound || usersFound.length === 0) {
         showError(
-          "La mail selezionata non corrisponde ad un utente registrato!"
+          "La mail selezionata non corrisponde ad un utente registrato!",
         );
         return;
       }
@@ -106,7 +112,7 @@ const GroupHandling = () => {
       const userToAdd_microsoft_id = usersFound[0].microsoft_id;
       const alrExistsMember = await getSingleGroupMember(
         groupId,
-        userToAdd_microsoft_id
+        userToAdd_microsoft_id,
       );
 
       if (alrExistsMember && alrExistsMember.length > 0) {
@@ -136,7 +142,7 @@ const GroupHandling = () => {
 
     const isConfirmed = await showConfirm(
       "Elimina Spesa",
-      "Sei sicuro di voler eliminare questa spesa? L'azione è irreversibile."
+      "Sei sicuro di voler eliminare questa spesa? L'azione è irreversibile.",
     );
 
     if (!isConfirmed) return;
@@ -162,7 +168,7 @@ const GroupHandling = () => {
 
     const isConfirmed = await showConfirm(
       "Espelli Utente",
-      "Sei sicuro? Se lo elimini, i suoi dati storici nel gruppo potrebbero diventare inconsistenti."
+      "Sei sicuro? Se lo elimini, i suoi dati storici nel gruppo potrebbero diventare inconsistenti.",
     );
 
     if (!isConfirmed) return;
@@ -212,6 +218,21 @@ const GroupHandling = () => {
         <div className="group-handling-section-row">
           <div className="group-handling-card group-handling-col-left">
             <h3>➕ Aggiungi una spesa</h3>
+
+            {!isUserAdmin && (
+              <p
+                style={{
+                  color: "#e74c3c",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  fontSize: "0.9rem",
+                  marginBottom: "15px",
+                }}
+              >
+                🔒 Solo l'admin può aggiungere spese.
+              </p>
+            )}
+
             <form onSubmit={handleAddExpense}>
               <div className="group-handling-form-group">
                 <label className="group-handling-label" htmlFor="description">
@@ -224,6 +245,7 @@ const GroupHandling = () => {
                   placeholder="Es. Cena"
                   onChange={(e) => setDescription(e.target.value)}
                   required
+                  disabled={!isUserAdmin}
                 />
               </div>
               <div className="group-handling-form-group">
@@ -238,10 +260,15 @@ const GroupHandling = () => {
                   step="0.01"
                   onChange={(e) => setAmount(e.target.value)}
                   required
+                  disabled={!isUserAdmin}
                 />
               </div>
-              <button type="submit" className="group-handling-save-btn">
-                Salva spesa
+              <button
+                type="submit"
+                className="group-handling-save-btn"
+                disabled={!isUserAdmin}
+              >
+                {isUserAdmin ? "Salva spesa" : "Solo Admin"}
               </button>
             </form>
           </div>
@@ -258,7 +285,6 @@ const GroupHandling = () => {
                   <Link
                     key={expense.id}
                     to={`/groupHandling/${groupId}/expenseHandling/${expense.id}`}
-                    // MODIFICA QUI: Aggiunta classe admin-view se admin
                     className={`group-handling-item ${
                       isUserAdmin ? "admin-view" : ""
                     }`}
@@ -297,6 +323,21 @@ const GroupHandling = () => {
         >
           <div className="group-handling-card group-handling-col-left">
             <h3>➕ Aggiungi Partecipante</h3>
+
+            {!isUserAdmin && (
+              <p
+                style={{
+                  color: "#e74c3c",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  fontSize: "0.9rem",
+                  marginBottom: "15px",
+                }}
+              >
+                🔒 Solo l'admin può invitare utenti.
+              </p>
+            )}
+
             <form onSubmit={handleAddMember}>
               <div className="group-handling-form-group">
                 <label className="group-handling-label" htmlFor="memberEmail">
@@ -310,6 +351,7 @@ const GroupHandling = () => {
                   placeholder="mario.rossi@email.com"
                   onChange={(e) => setNewMemberEmail(e.target.value)}
                   required
+                  disabled={!isUserAdmin}
                 />
               </div>
 
@@ -323,8 +365,12 @@ const GroupHandling = () => {
                 L'utente verrà aggiunto con un saldo iniziale di 0,00 €.
               </p>
 
-              <button type="submit" className="group-handling-save-btn">
-                Aggiungi al Gruppo
+              <button
+                type="submit"
+                className="group-handling-save-btn"
+                disabled={!isUserAdmin}
+              >
+                {isUserAdmin ? "Aggiungi al Gruppo" : "Solo Admin"}
               </button>
             </form>
           </div>
@@ -353,7 +399,6 @@ const GroupHandling = () => {
                 members.map((member) => (
                   <div
                     key={member.user_id}
-                    // MODIFICA QUI: Aggiunta classe admin-view se admin
                     className={`group-handling-item ${
                       isUserAdmin ? "admin-view" : ""
                     }`}

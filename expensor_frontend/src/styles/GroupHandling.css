@@ -22,8 +22,6 @@
   display: flex;
   overflow: hidden;
   z-index: 100;
-
-  position: fixed;
 }
 
 .group-handling-wrapper::before {
@@ -184,6 +182,19 @@
   transform: translateY(0);
 }
 
+.group-handling-save-btn:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.group-handling-input:disabled {
+  background-color: #f9f9f9;
+  color: #999;
+  cursor: not-allowed;
+}
+
 .group-handling-list {
   max-height: 250px;
   overflow-y: auto;
@@ -273,19 +284,14 @@
   background-color: #c0392b;
 }
 
-/* --- LOGICA HOVER CONDIZIONALE --- */
-
-/* Nascondi l'importo SOLO se è vista admin */
 .group-handling-item.admin-view:hover .group-handling-amount-display {
   display: none;
 }
 
-/* Mostra il bottone SOLO se è vista admin */
 .group-handling-item.admin-view:hover .group-handling-delete-btn {
   display: block;
 }
 
-/* (Facoltativo) Highlight rosso se sei admin e vuoi cancellare */
 .group-handling-item.admin-view:hover {
   border-color: var(--danger-color);
 }
@@ -309,16 +315,13 @@
     padding: 15px;
   }
 
-  /* Su mobile, l'admin vede sempre il tasto elimina (no hover) */
   .group-handling-item.admin-view .group-handling-delete-btn {
     display: block;
     opacity: 1;
   }
 
-  /* Su mobile, l'admin vede anche l'importo affiancato (se c'è spazio) */
   .group-handling-item.admin-view .group-handling-amount-display {
     display: none;
-    /* O block, a seconda della preferenza */
   }
 
   .group-handling-amount-display {
