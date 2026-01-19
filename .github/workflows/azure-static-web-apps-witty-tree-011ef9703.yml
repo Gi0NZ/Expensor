@@ -37,6 +37,7 @@ jobs:
           REACT_APP_CLIENT_ID: ${{ secrets.REACT_APP_CLIENT_ID }}
           REACT_APP_API_AUTHORITY: ${{ secrets.REACT_APP_API_AUTHORITY }}
           REACT_APP_AUDIENCE: ${{ secrets.REACT_APP_AUDIENCE }}
+          REACT_APP_INSIGHT_CONNECTION_STRING: ${{ secrets.REACT_APP_INSIGHT_CONNECTION_STRING }}
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
