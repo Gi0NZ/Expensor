@@ -27,12 +27,60 @@ Alla base del progetto si pone l'idea di creare un ambiente concentrato ed unifi
 
 ## Architettura cloud
 
--- post deploy per bene
+Expensor si basa su una architettura Serverless a Microservizi (FaaS) Cloud-Native. Seuge una struttura su pattern Single Page Application, in cui il frontend viene disaccoppiato dalla logica backend nonché dalla persistenza dei dati, elementi coi quali si interagisce strettamente tramite chiamate API RPC-oriented. 
+
+L'utilizzo di componenti Azure (Database, Blob, SPA, Entra ID) permette di tralasciare la complessità dell'infrastruttura e concentrarsi strettamente sullo sviluppo puro della logica applicativa. 
+
+![alt text](https://github.com/Gi0NZ/Expensor/blob/main/Architettura/Architettura%20Expensor.jpeg "Architettura Expensor")
+
+## Frontend
+* React
+* Layout strutturato con Navbar laterale
+* Autenticazione tramite Azure Entra ID
+* Gestione grafica dei ruoli
+* Host su Azure Static Web Apps
+
+## Backend
+* Node.js
+* API RPC-oriented per la gestione del backend
+* Controllo dei permessi in base al ruolo
+* Integrazione Azure basata su **Azure Functions**
+
+## Servizi Azure Utilizzati
+* **Microsoft Entra ID**
+  * Autenticazione gestita tramite MSAL
+  * Supportata da *HttpOnly Cookie* per la gestione della sessione
+
+* **Azure Database SQL**
+  * Persistenza di tutti i dati relazionali/strutturati
+ 
+* **Azure Blob Storage**
+  * Archiviazione delle immagini di profilo caricate dell'utente
+
+* **Azure Functions**
+  * Host del Backend
+  * Gestione della porzione di logica applicativa serverless
+  * Invio delle mail di avviso
+ 
+* **Azure Monitor**
+  * Monitoraggio generale delle prestazioni
+ 
+* **Azure Insights**
+  * Monitoraggio dettagliato delle Azure Functions
+ 
+* **Azure Static Web App**
+  * Host del frontend         
 
 # Documentazione
+* README dettagliati strutturati per Frontend e Backend
+* JSDocs uniformi, accessibili aggiungendo al link del sito rispettivamente:
+  * Frontend: \[* URL SITO *\]/docs/Frontend/index.html (![alt text](https://witty-tree-011ef9703.4.azurestaticapps.net/docs/Frontend/index.html))
+  * Backend: \[* URL SITO *\]/docs/Backend/index.html (![alt text](https://witty-tree-011ef9703.4.azurestaticapps.net/docs/Backend/index.html))
 
 
-# Documentazione
+
+
+# Struttura del  progetto
 ```text
 Expensor/\
 ├── expensor_backend/      # API Serverless (Azure Functions & Node.js)\
