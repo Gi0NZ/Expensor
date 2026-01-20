@@ -1,4 +1,4 @@
-# Getting Started with Create React App
+<!--# Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
@@ -67,4 +67,47 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 
 ### `npm run build` fails to minify
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)-->
+
+# Expensor - Frontend
+Il frontend di Expensor è sviluppato su **React**. Fornisce l'interfaccia di interazione con la piattaforma per la gestione di **spese**, **gruppi**, **budget** nonché visione della **dashboard**.
+
+## Stack
+* React
+* JavaScript
+
+## Funzionalità Principali
+
+* **Dashboard**
+  * Dashboard grafica con le spese dei 30 giorni precedenti
+  * Distribuzione grafica differenziata per colore
+  * Lista delle ultime 5 spese effettuate con importo, data e descrizione (se inserita)
+
+* **Spese**  
+  * Elenco delle spese totali effettuate dall'acount
+  * Possibilità di impostare un budget mensile, intaccato dall'aggiunta di spese nel mese
+  * Possibilità di eliminazione spesa
+* **Gruppi**
+  * Creazione/Eliminazione dei gruppi
+  * Aggiunta/Eliminazione spese per gruppo
+  * Aggiunta/Espulsione dei membri
+  * Gestione tramite ruolo
+  * Navbar di progresso della restituzione
+
+* **Autenticazione**
+  * Autenticazione Azure Entra ID via MSAL
+  * Gestione della sessione backend via HttpOnly Cookie
+
+## Struttura del progetto
+```text
+
+/expensor_frontend/
+├── public/
+│   └── docs       
+├── src/
+│   ├── components/
+│   ├── pages/
+│   └── services      
+├── package.json            
+└── README.md            
+
