@@ -74,8 +74,8 @@ L'utilizzo di componenti Azure (Database, Blob, SPA, Entra ID) permette di trala
 # Documentazione
 * README dettagliati strutturati per Frontend e Backend
 * JSDocs uniformi, accessibili aggiungendo al link del sito rispettivamente:
-  * Frontend: \[* URL SITO *\]/docs/Frontend/index.html (![Link Frontend](https://witty-tree-011ef9703.4.azurestaticapps.net/docs/Frontend/index.html "Link Frontend"))
-  * Backend: \[* URL SITO *\]/docs/Backend/index.html (![Link Backend](https://witty-tree-011ef9703.4.azurestaticapps.net/docs/Backend/index.html "Link Backend"))
+  * Frontend: \[* URL SITO *\]/docs/Frontend/index.html (![Link Frontend](https://witty-tree-011ef9703.4.azurestaticapps.net/docs/Frontend/index.html))
+  * Backend: \[* URL SITO *\]/docs/Backend/index.html (![Link Backend](https://witty-tree-011ef9703.4.azurestaticapps.net/docs/Backend/index.html))
 
 
 
