@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: pages/AddExpense.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: pages/AddExpense.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useEffect, useState } from "react";
+import { 
+  getCategories, 
+  addExpense, 
+  getBudgetStatus, 
+  setBudget 
+} from "../services/api";
+import "../styles/AddExpense.css";
+import Navbar from "../components/Navbar";
+import BudgetCard from "../components/BudgetCard";
+
+/**
+ * Componente pagina per la creazione di una nuova spesa con gestione budget integrata.
+ * * **Funzionalità:**
+ * 1. **Gestione Form:** Raccoglie i dati della transazione.
+ * 2. **Budget Monitor:** Visualizza e aggiorna il budget mensile contestualmente all'inserimento.
+ * 3. **Autenticazione:** Utilizza cookie HttpOnly sicuri per l'identificazione utente (nessun ID passato manualmente).
+ * 4. **Feedback UI:** Aggiorna immediatamente lo stato del budget dopo l'inserimento di una spesa.
+ * * @component
+ * @returns {JSX.Element} La pagina renderizzata con Navbar, BudgetCard e Form.
+ */
+const AddExpense = () => {
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  
+  const [categories, setCategories] = useState([]);
+  const [budgetStatus, setBudgetStatus] = useState(null);
+
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [status, setStatus] = useState({ type: "", message: "" });
+
+  /**
+   * Effect Hook per l'inizializzazione.
+   * Esegue il fetch parallelo delle categorie e dello stato del budget
+   * per ottimizzare il tempo di caricamento della pagina.
+   */
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [catsData, budgetData] = await Promise.all([
+          getCategories(),
+          getBudgetStatus()
+        ]);
+        
+        setCategories(catsData || []);
+        setBudgetStatus(budgetData);
+      } catch (error) {
+        console.error("Errore nel recupero dati:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  /**
+   * Callback per l'aggiornamento del budget utente.
+   * Viene invocata dal componente figlio BudgetCard.
+   * * @param {number|string} newLimit - Il nuovo limite impostato.
+   */
+  const handleSetBudget = async (newLimit) => {
+    try {
+      await setBudget(newLimit);
+      const updated = await getBudgetStatus();
+      setBudgetStatus(updated);
+    } catch (error) {
+      console.error("Errore update budget", error);
+    }
+  };
+
+  /**
+   * Gestisce l'invio del form.
+   * Invia i dati al backend (che identifica l'utente via cookie) e,
+   * in caso di successo, aggiorna immediatamente la visualizzazione del budget.
+   * * @param {React.FormEvent} e - L'evento di submit.
+   */
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      // Chiamata API senza user_id (gestito da cookie/token backend)
+      await addExpense({
+        amount,
+        date,
+        description,
+        category_id: parseInt(category, 10),
+      });
+
+      setStatus({ type: "success", message: "Spesa aggiunta con successo!" });
+
+      setAmount("");
+      setDate("");
+      setDescription("");
+      setCategory("");
+
+      // Ricarica il budget per riflettere la nuova spesa nella UI
+      const updatedBudget = await getBudgetStatus();
+      setBudgetStatus(updatedBudget);
+
+      setTimeout(() => setStatus({ type: "", message: "" }), 3000);
+    } catch (err) {
+      console.error("Errore nell'aggiunta della spesa:", err);
+      setStatus({ type: "error", message: "Errore: " + err.message });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    &lt;div className="page-wrapper">
+      &lt;Navbar />
+
+      &lt;div className="page-content">
+        &lt;div className="content-stack">
+          
+          &lt;div className="budget-section-wrapper">
+             &lt;BudgetCard 
+                budgetStatus={budgetStatus} 
+                onSetBudget={handleSetBudget} 
+             />
+          &lt;/div>
+
+          &lt;div className="add-expense-card">
+            &lt;div className="add-expense-card-header">
+              &lt;h2>Nuova Spesa&lt;/h2>
+              &lt;p>Inserisci i dettagli della tua transazione&lt;/p>
+            &lt;/div>
+
+            {status.message &amp;&amp; (
+              &lt;div className={`status-message ${status.type}`}>
+                {status.message}
+              &lt;/div>
+            )}
+
+            &lt;form onSubmit={handleSubmit} className="expense-form">
+              &lt;div className="form-group">
+                &lt;label htmlFor="amount">Importo (€)&lt;/label>
+                &lt;input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  required
+                />
+              &lt;/div>
+
+              &lt;div className="form-row">
+                &lt;div className="form-group half">
+                  &lt;label htmlFor="date">Data&lt;/label>
+                  &lt;input
+                    id="date"
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    max={new Date().toISOString().split("T")[0]}
+                    required
+                  />
+                &lt;/div>
+
+                &lt;div className="form-group half">
+                  &lt;label htmlFor="category">Categoria&lt;/label>
+                  &lt;select
+                    id="category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    required
+                    disabled={loading}
+                  >
+                    &lt;option value="">Seleziona...&lt;/option>
+                    {categories.map((cat) => (
+                      &lt;option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      &lt;/option>
+                    ))}
+                  &lt;/select>
+                &lt;/div>
+              &lt;/div>
+
+              &lt;div className="form-group">
+                &lt;label htmlFor="description">Descrizione (Opzionale)&lt;/label>
+                &lt;input
+                  id="description"
+                  type="text"
+                  placeholder="Es. Cena con amici..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              &lt;/div>
+
+              &lt;button
+                type="submit"
+                className="submit-btn"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Salvataggio..." : "Aggiungi Spesa"}
+              &lt;/button>
+            &lt;/form>
+          &lt;/div>
+        &lt;/div>
+      &lt;/div>
+    &lt;/div>
+  );
+};
+
+export default AddExpense;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AddExpense">AddExpense</a></li><li><a href="global.html#addExpense">addExpense</a></li><li><a href="global.html#addExpenseSplit">addExpenseSplit</a></li><li><a href="global.html#addGroupExpense">addGroupExpense</a></li><li><a href="global.html#addGroupMember">addGroupMember</a></li><li><a href="global.html#deleteProfileImage">deleteProfileImage</a></li><li><a href="global.html#getAllExpenses">getAllExpenses</a></li><li><a href="global.html#getBudgetStatus">getBudgetStatus</a></li><li><a href="global.html#getCategories">getCategories</a></li><li><a href="global.html#getExpenseDetails">getExpenseDetails</a></li><li><a href="global.html#getExpenseSplits">getExpenseSplits</a></li><li><a href="global.html#getExpensesByCategory">getExpensesByCategory</a></li><li><a href="global.html#getGroupAdmin">getGroupAdmin</a></li><li><a href="global.html#getGroupExpenses">getGroupExpenses</a></li><li><a href="global.html#getGroupInfo">getGroupInfo</a></li><li><a href="global.html#getGroupMembers">getGroupMembers</a></li><li><a href="global.html#getGroupsByUser">getGroupsByUser</a></li><li><a href="global.html#getRecentExpenses">getRecentExpenses</a></li><li><a href="global.html#getSingleGroupMember">getSingleGroupMember</a></li><li><a href="global.html#getUserByMail">getUserByMail</a></li><li><a href="global.html#getUserInfo">getUserInfo</a></li><li><a href="global.html#headers">headers</a></li><li><a href="global.html#removeExpense">removeExpense</a></li><li><a href="global.html#removeExpenseSplit">removeExpenseSplit</a></li><li><a href="global.html#removeGroup">removeGroup</a></li><li><a href="global.html#removeGroupExpense">removeGroupExpense</a></li><li><a href="global.html#removeGroupMember">removeGroupMember</a></li><li><a href="global.html#saveGroup">saveGroup</a></li><li><a href="global.html#saveUserToBackend">saveUserToBackend</a></li><li><a href="global.html#setBudget">setBudget</a></li><li><a href="global.html#uploadProfileImage">uploadProfileImage</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Jan 20 2026 11:39:30 GMT+0100 (Ora standard dell’Europa centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

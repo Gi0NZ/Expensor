@@ -8,7 +8,7 @@
  * 2. **Scadenza Passata:** Imposta `Expires` al 01 Gennaio 1970.
  * Questo forza il browser a eliminare immediatamente il cookie `auth_token`, terminando la sessione sull'applicazione corrente.
  *
- * @module Auth
+ * @module User
  * @param {Object} context - Il contesto di esecuzione di Azure Function.
  * @param {Object} req - L'oggetto richiesta HTTP.
  *

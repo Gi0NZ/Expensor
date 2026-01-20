@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: DeleteProfileImage/index.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: DeleteProfileImage/index.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const { BlobServiceClient } = require("@azure/storage-blob");
+const { connectDB } = require("../db");
+const sql = require("mssql");
+const { parseCookies } = require("../utils/cookieHelper");
+const jwt = require("jsonwebtoken");
+
+/**
+ * Azure Function per rimuovere l'immagine del profilo dell'utente autenticato.
+ *
+ * **Flusso di Esecuzione:**
+ * 1. **Autenticazione:** Verifica il cookie `auth_token` ed estrae il Microsoft ID (`oid`).
+ * 2. **Recupero Metadati:** Interroga il DB per ottenere l'URL attuale dell'immagine salvata.
+ * 3. **Pulizia Storage (Best-Effort):**
+ * - Se esiste un URL, parsifica la stringa per ottenere il nome del blob.
+ * - Tenta di eliminare il file dal container `profile-images`.
+ * - *Nota:* Questo passaggio è avvolto in un `try-catch` dedicato. Se l'eliminazione fallisce (es. file già inesistente), l'esecuzione **prosegue** per garantire la pulizia del DB.
+ * 4. **Aggiornamento Database:** Imposta il campo `profile_image_url` a `NULL` nella tabella `users`.
+ *
+ * @module User
+ * @param {Object} context - Il contesto di esecuzione di Azure Function (logging e response).
+ * @param {Object} req - L'oggetto richiesta HTTP.
+ * @param {string} req.headers.cookie - Il cookie contenente il token JWT.
+ *
+ * @returns {Promise&lt;void>} Imposta `context.res` con uno dei seguenti stati:
+ * - **200 OK**: Operazione completata (Immagine rimossa dal DB e, se possibile, dallo Storage).
+ * - **401 Unauthorized**: Cookie mancante o token scaduto/invalido.
+ * - **500 Internal Server Error**: Errore critico di connessione al DB o errore imprevisto.
+ */
+module.exports = async function (context, req) {
+  try {
+    const cookies = parseCookies(req);
+    const token = cookies["auth_token"];
+
+    if (!token) {
+      context.res = {
+        status: 401,
+
+        body: { error: "Non autenticato." },
+      };
+      return;
+    }
+
+    const decodedToken = jwt.decode(token);
+    if (!decodedToken || !decodedToken.oid) {
+      context.res = {
+        status: 401,
+
+        body: { error: "Token non valido." },
+      };
+      return;
+    }
+
+    const microsoft_id = decodedToken.oid;
+
+    const pool = await connectDB();
+
+    const result = await pool
+      .request()
+      .input("uid", sql.NVarChar, microsoft_id)
+      .query("SELECT profile_image_url FROM users WHERE microsoft_id = @uid");
+
+    const currentUrl = result.recordset[0]?.profile_image_url;
+
+    if (currentUrl) {
+      try {
+        const urlObj = new URL(currentUrl);
+        const pathName = urlObj.pathname;
+        const blobName = decodeURIComponent(pathName.split("/").pop());
+
+        const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+        const blobServiceClient =
+          BlobServiceClient.fromConnectionString(connectionString);
+        const containerClient =
+          blobServiceClient.getContainerClient("profile-images");
+        const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+        const exists = await blockBlobClient.exists();
+        if (exists) {
+          await blockBlobClient.delete();
+          context.log(`Blob '${blobName}' eliminato con successo.`);
+        }
+      } catch (blobErr) {
+        context.log.error("ERRORE CANCELLAZIONE BLOB:", blobErr.message);
+      }
+    }
+
+    await pool
+      .request()
+      .input("uid", sql.NVarChar, microsoft_id)
+      .query(
+        "UPDATE users SET profile_image_url = NULL WHERE microsoft_id = @uid"
+      );
+
+    context.res = {
+      status: 200,
+
+      body: { message: "Foto rimossa" },
+    };
+  } catch (err) {
+    context.log.error("DeleteProfileImage: errore 500 interno", err);
+    context.res = {
+      status: 500,
+
+      body: { error: err.message },
+    };
+  }
+};</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Budget.html">Budget</a></li><li><a href="module-Expenses.html">Expenses</a></li><li><a href="module-GroupExpenses.html">GroupExpenses</a></li><li><a href="module-GroupManagement.html">GroupManagement</a></li><li><a href="module-GroupMembers.html">GroupMembers</a></li><li><a href="module-User.html">User</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Jan 20 2026 11:54:42 GMT+0100 (Ora standard dell’Europa centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
