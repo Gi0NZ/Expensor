@@ -6,7 +6,8 @@ Il backend di Expensor è sviluppato in **Node.js** tramite un approccio serverl
 
 * **Node.js**
 * **MySQL**
-* **Azure Blob Storage** (immagini profilo)
+* **Azure Blob Storage** 
+   * Gestione immagini di profilo
 * **Azure Functions**
     * Gestione interazioni DB
     * Invio Mail di avviso
