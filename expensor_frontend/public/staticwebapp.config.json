@@ -1,7 +1,7 @@
 {
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/static/media/*", "/images/*", "*.{css,scss,js,json}"]
+    "exclude": ["/static/media/*", "/images/*", "*.{css,scss,js,json}","/docs/*"]
   },
   "responseOverrides": {
     "404": {
