@@ -85,9 +85,7 @@ L'utilizzo di componenti Azure (Database, Blob, SPA, Entra ID) permette di trala
 Expensor/\
 ├── expensor_backend/      # API Serverless (Azure Functions & Node.js)\
 │   └── README.md          # Documentazione Backend\
-│
 ├── expensor_frontend/     # Client Application (React & MSAL)\
 │   └── README.md          # Documentazione Frontend\
-│
 ├── .gitignore             # File ignorati\
 └── README.md              # Documentazione generale\
