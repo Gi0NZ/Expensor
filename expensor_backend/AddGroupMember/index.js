@@ -140,36 +140,19 @@ module.exports = async function (context, req) {
       const senderEmail = process.env.SENDER_EMAIL;
       const groupLink = `${frontendBase}/groupHandling/${group_id}`;
 
-      const emailSent = await addedNotify(
-        email,
-        user_name,
-        senderEmail,
-        adminMail,
-        adminName,
-        group_name,
-        groupLink,
-      );
-
-      /*try {
-        await resend.emails.send({
-          from: `Expensor App <${senderEmail}>`,
-          to: [email],
-          subject: `Sei stato aggiunto al gruppo: ${group_name} 🎉`,
-          html: `
-              <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-                  <h2 style="color: #4CAF50;">Benvenuto nel gruppo!</h2>
-                  <p>Ciao <strong>${user_name}</strong>,</p>
-                  <p>Sei stato aggiunto con successo al gruppo di spesa <strong>"${group_name}"</strong> da ${adminName} (${adminMail}) su Expensor.</p>
-                  <p>Accedi subito per vedere le spese e aggiungere la tua parte.</p>
-                  <br/>
-                  <a href="${groupLink}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Vai al Gruppo</a>
-                  <p style="font-size: 0.8rem; color: #999; margin-top: 30px;">Se pensi sia un errore, contatta l'amministratore del gruppo.</p>
-              </div>
-          `,
-        });
+      try {
+        await addedNotify(
+          email,
+          user_name,
+          senderEmail,
+          adminMail,
+          adminName,
+          group_name,
+          groupLink,
+        );
       } catch (emailErr) {
         context.log.error("Errore invio email Resend:", emailErr);
-      }*/
+      }
     }
 
     context.res = {

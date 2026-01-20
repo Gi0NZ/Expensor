@@ -68,10 +68,10 @@ module.exports = async function (context, req) {
 
     const pool = await connectDB();
 
-     const infoResultPre = await pool
-           .request()
-           .input("gid", sql.Int, groupId)
-           .input("uid", sql.NVarChar, removedId).query(`
+    const infoResultPre = await pool
+      .request()
+      .input("gid", sql.Int, groupId)
+      .input("uid", sql.NVarChar, removedId).query(`
                SELECT u.email, u.name as user_name, g.name as group_name
                FROM users u, groups g
                WHERE u.microsoft_id = @uid AND g.id = @gid
@@ -106,55 +106,41 @@ module.exports = async function (context, req) {
     }
 
     const requesterName = await pool
-    .request()
-    .input("requester_id", sql.NVarChar, reqId)
-    .query(`
+      .request()
+      .input("requester_id", sql.NVarChar, reqId).query(`
       SELECT u.email, u.name
       FROM users u
       WHERE u.microsoft_id = @requester_id
-      `)
+      `);
 
-      console.log("REQUESTER NAME:", requesterName.recordset[0].name);
+    console.log("REQUESTER NAME:", requesterName.recordset[0].name);
 
-          const infoResultPost = await pool
-    .request()
-    .input("group_id", sql.Int, groupId)
-    .input("removed_id", sql.NVarChar, removedId)
-    .query(`
+    const infoResultPost = await pool
+      .request()
+      .input("group_id", sql.Int, groupId)
+      .input("removed_id", sql.NVarChar, removedId).query(`
       SELECT *
           FROM group_members g
           WHERE g.group_id = @group_id AND g.user_id = @removed_id
       `);
 
-
-
-    if(infoResultPost.recordset.length === 0){
-        const { email, user_name, group_name } = infoResultPre.recordset[0];
-        const senderEmail = process.env.SENDER_EMAIL;
-        const admin_mail = requesterName.recordset[0].email;
-        const admin_name = requesterName.recordset[0].name;
-
-        const expelled_mail = await expelledNotify(email, user_name, senderEmail, admin_mail, admin_name, group_name);
-        /*try {
-          await resend.emails.send({
-            from: `Expensor App <${senderEmail}>`,
-            to: [email],
-            subject: `‼️ Sei stato espulso dal gruppo: ${group_name} ‼️`,
-            html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-                    <h2 style="color: #4CAF50;">ATTENZIONE!</h2>
-                    <p>Ciao <strong>${user_name}</strong>,</p>
-                    <p>Questa mail automatica ti è stata inviata per avvisarti della tua espulsione dal gruppo <strong>"${group_name}"</strong> su Expensor.</p>
-                    <p>La decisione della tua espulsione è a carico di ${requesterName.recordset[0].name} (${requesterName.recordset[0].email})</p>
-                    <br/>
-                    <p style="font-size: 0.8rem; color: #999; margin-top: 30px;">Se pensi sia un errore, contatta l'amministratore del gruppo.</p>
-                </div>
-            `,
-          });
-        } catch (emailErr) {
-          context.log.error("Errore invio email Resend:", emailErr);
-        }        */
-
+    if (infoResultPost.recordset.length === 0) {
+      const { email, user_name, group_name } = infoResultPre.recordset[0];
+      const sender_email = process.env.SENDER_EMAIL;
+      const admin_mail = requesterName.recordset[0].email;
+      const admin_name = requesterName.recordset[0].name;
+      try {
+        await expelledNotify(
+          email,
+          user_name,
+          sender_email,
+          admin_mail,
+          admin_name,
+          group_name,
+        );
+      } catch (emailErr) {
+        context.log.error("Errore invio email Resend:", emailErr);
+      }
     }
 
     context.res = {

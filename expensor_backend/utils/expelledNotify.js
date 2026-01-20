@@ -2,14 +2,20 @@ const { Resend } = require("resend");
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-
-const expelledNotify = async (user_mail, user_name, sender_mail, admin_mail, admin_name, group_name) => {
+const expelledNotify = async (
+  user_mail,
+  user_name,
+  sender_mail,
+  admin_mail,
+  admin_name,
+  group_name,
+) => {
   try {
     const { data, error } = await resend.emails.send({
-       from: `Expensor App <${sender_mail}>`,
-            to: [user_email],
-            subject: `‼️ Sei stato espulso dal gruppo: ${group_name} ‼️`,
-            html: `
+      from: `Expensor App <${sender_mail}>`,
+      to: [user_mail],
+      subject: `‼️ Sei stato espulso dal gruppo: ${group_name} ‼️`,
+      html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
                     <h2 style="color: #4CAF50;">ATTENZIONE!</h2>
                     <p>Ciao <strong>${user_name}</strong>,</p>
