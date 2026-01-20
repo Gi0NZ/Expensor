@@ -2,11 +2,10 @@ const { Resend } = require("resend");
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-
 const sendBudgetAlert = async (email, name, amount, limit) => {
   try {
     const { data, error } = await resend.emails.send({
-      from: process.env.SENDER_EMAIL, 
+      from: process.env.SENDER_EMAIL,
       to: [email],
       subject: "⚠️ Attenzione: Budget Mensile Superato!",
       html: `

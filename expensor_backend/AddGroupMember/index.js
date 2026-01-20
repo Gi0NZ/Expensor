@@ -3,6 +3,7 @@ const sql = require("mssql");
 const { Resend } = require("resend");
 const { parseCookies } = require("../utils/cookieHelper");
 const jwt = require("jsonwebtoken");
+const { addedNotify } = require("../utils/addedNotify");
 
 /**
  * Azure Function per aggiungere un utente a un gruppo esistente e notificargli l'evento.
@@ -95,7 +96,6 @@ module.exports = async function (context, req) {
       return;
     }
 
-
     try {
       await pool
         .request()
@@ -125,24 +125,32 @@ module.exports = async function (context, req) {
       `);
 
     const adminInfo = await pool
-    .request()
-    .input("m_id", sql.NVarChar, groupAdmin)
-    .query(`
+      .request()
+      .input("m_id", sql.NVarChar, groupAdmin).query(`
       SELECT * 
       FROM users u
       WHERE u.microsoft_id = @m_id
-      `)
+      `);
 
     if (infoResult.recordset.length > 0) {
       const { email, user_name, group_name } = infoResult.recordset[0];
 
       const adminMail = adminInfo.recordset[0].email;
       const adminName = adminInfo.recordset[0].name;
-
-      const resend = new Resend(process.env.RESEND_API_KEY);
       const senderEmail = process.env.SENDER_EMAIL;
       const groupLink = `${frontendBase}/groupHandling/${group_id}`;
-      try {
+
+      const emailSent = await addedNotify(
+        email,
+        user_name,
+        senderEmail,
+        adminMail,
+        adminName,
+        group_name,
+        groupLink,
+      );
+
+      /*try {
         await resend.emails.send({
           from: `Expensor App <${senderEmail}>`,
           to: [email],
@@ -161,7 +169,7 @@ module.exports = async function (context, req) {
         });
       } catch (emailErr) {
         context.log.error("Errore invio email Resend:", emailErr);
-      }
+      }*/
     }
 
     context.res = {

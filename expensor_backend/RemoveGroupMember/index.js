@@ -3,6 +3,7 @@ const sql = require("mssql");
 const { parseCookies } = require("../utils/cookieHelper");
 const jwt = require("jsonwebtoken");
 const { Resend } = require("resend");
+const { expelledNotify } = require("../utils/expelledNotify");
 
 /**
  * Azure Function per rimuovere (espellere) un membro da un gruppo esistente.
@@ -126,14 +127,15 @@ module.exports = async function (context, req) {
       `);
 
 
-    
-    console.log("LUNGHEZZA INFO RESULT:", infoResultPost.recordset.length);
+
     if(infoResultPost.recordset.length === 0){
         const { email, user_name, group_name } = infoResultPre.recordset[0];
-        console.log("EMAIL:",email);
-        const resend = new Resend(process.env.RESEND_API_KEY);
         const senderEmail = process.env.SENDER_EMAIL;
-        try {
+        const admin_mail = requesterName.recordset[0].email;
+        const admin_name = requesterName.recordset[0].name;
+
+        const expelled_mail = await expelledNotify(email, user_name, senderEmail, admin_mail, admin_name, group_name);
+        /*try {
           await resend.emails.send({
             from: `Expensor App <${senderEmail}>`,
             to: [email],
@@ -151,7 +153,7 @@ module.exports = async function (context, req) {
           });
         } catch (emailErr) {
           context.log.error("Errore invio email Resend:", emailErr);
-        }        
+        }        */
 
     }
 

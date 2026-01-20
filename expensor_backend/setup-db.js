@@ -133,6 +133,7 @@ async function setupDatabase() {
                 user_id NVARCHAR(255) PRIMARY KEY,
                 monthly_limit DECIMAL(10, 2) NOT NULL,
                 last_email_sent_month DATE DEFAULT NULL 
+                FOREIGN_KEY (user_id) REFERENCES USER(microsoft_id)
             );
         `)
 
