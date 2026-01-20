@@ -11,7 +11,8 @@ Il backend di Expensor è sviluppato in **Node.js** tramite un approccio serverl
     * Gestione interazioni DB
     * Invio Mail di avviso
 * **Azure Entra ID**
-    * Easy Auth
+    * MSAL
+    * HttpOnly Cookie
 
 # Struttura Backend
 
