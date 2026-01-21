@@ -3,6 +3,9 @@
     "rewrite": "/index.html",
     "exclude": ["/static/media/*", "/images/*", "*.{css,scss,js,json}","/docs/*"]
   },
+  "globalHeaders": {
+    "Cross-Origin-Opener-Policy": "same-origin-allow-popups"
+  },
   "responseOverrides": {
     "404": {
       "rewrite": "/index.html"
