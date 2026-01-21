@@ -1,3 +1,8 @@
+const { parseCookies } = require("../utils/cookieHelper");
+const jwt = require("jsonwebtoken");
+
+
+
 /**
  * Azure Function per gestire il logout locale dell'utente (chiusura sessione).
  *
@@ -15,7 +20,6 @@
  * @returns {Promise<void>} Imposta `context.res` con:
  * - **200 OK**: Restituisce un messaggio di successo e l'header `Set-Cookie` per la rimozione del token.
  */
-const { parseCookies } = require("../utils/cookieHelper");
 
 module.exports = async function (context, req) {
 

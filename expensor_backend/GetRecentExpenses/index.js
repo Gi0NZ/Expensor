@@ -1,6 +1,6 @@
 const { connectDB } = require("../db");
 const sql = require("mssql");
-const { parseCookies } = require("../utils/cookieHelper"); // Assicurati che il percorso sia corretto
+const { parseCookies } = require("../utils/cookieHelper"); 
 const jwt = require("jsonwebtoken");
 
 /**

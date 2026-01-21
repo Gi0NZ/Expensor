@@ -66,7 +66,7 @@ module.exports = async function (context, req) {
 
     const pool = await connectDB();
 
-    // 1. Verifica Admin
+
     const checkAdmin = await pool.request().input("expId", sql.Int, expense_id)
       .query(`
             SELECT g.admin 
@@ -106,7 +106,7 @@ module.exports = async function (context, req) {
       currentAmount = currentShareCheck.recordset[0].share_amount;
     }
 
-    // Controllo per evitare debiti negativi
+   
     if (currentAmount + amount < 0) {
       context.res = {
         status: 400,

@@ -49,7 +49,6 @@ module.exports = async function (context, req) {
     }
 
     const pool = await connectDB();
-    // Logica di fallback: Cerca in Query String, altrimenti nel Body
     const expense_id = req.query.expenseId || req.body.expenseId;
 
     if (!expense_id) {

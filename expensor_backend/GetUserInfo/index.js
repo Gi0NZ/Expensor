@@ -1,5 +1,8 @@
 const { connectDB } = require("../db");
 const sql = require("mssql");
+const { parseCookies } = require("../utils/cookieHelper");
+const jwt = require("jsonwebtoken");
+
 
 /**
  * Azure Function per recuperare il profilo completo di un utente specifico.
@@ -22,8 +25,30 @@ const sql = require("mssql");
  */
 module.exports = async function (context, req) {
   try {
+    const cookies = parseCookies(req);
+    const token = cookies["auth_token"];
+
+    if (!token) {
+      context.res = {
+        status: 401,
+
+        body: { error: "Non autenticato." },
+      };
+      return;
+    }
+
+    const decodedToken = jwt.decode(token);
+    if (!decodedToken || !decodedToken.oid) {
+      context.res = {
+        status: 401,
+
+        body: { error: "Token non valido." },
+      };
+      return;
+    }
+
+    const microsoft_id = decodedToken.oid;
     const pool = await connectDB();
-    const microsoft_id = req.query.microsoft_id;
 
     if (!microsoft_id) {
       context.log.warn("GetUserInfo: Parametro 'microsoft_id' mancante");

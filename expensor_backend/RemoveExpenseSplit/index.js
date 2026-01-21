@@ -1,6 +1,8 @@
 const { connectDB } = require("../db");
 const sql = require("mssql");
+const { parseCookies } = require("../utils/cookieHelper");
 const jwt = require("jsonwebtoken");
+
 
 /**
  * Azure Function per rimuovere una quota (split) di una spesa.
@@ -16,36 +18,34 @@ const jwt = require("jsonwebtoken");
  */
 module.exports = async function (context, req) {
   try {
+    const cookies = parseCookies(req);
+    const token = cookies["auth_token"];
+
+    if (!token) {
+      context.res = {
+        status: 401,
+
+        body: { error: "Non autenticato." },
+      };
+      return;
+    }
+
+    const decodedToken = jwt.decode(token);
+    if (!decodedToken || !decodedToken.oid) {
+      context.res = {
+        status: 401,
+
+        body: { error: "Token non valido." },
+      };
+      return;
+    }
+
     const { expense_id, user_id } = req.body;
 
     if (!expense_id || !user_id) {
       context.res = {
         status: 400,
         body: { error: "Parametri mancanti (expense_id o user_id)" },
-      };
-      return;
-    }
-
-    const cookieHeader = req.headers.cookie;
-    if (!cookieHeader) {
-      context.res = {
-        status: 401,
-        body: { error: "Non autenticato: Cookie mancante" },
-      };
-      return;
-    }
-
-    const cookies = {};
-    cookieHeader.split(";").forEach((cookie) => {
-      const parts = cookie.split("=");
-      cookies[parts.shift().trim()] = decodeURI(parts.join("="));
-    });
-
-    const token = cookies["auth_token"];
-    if (!token) {
-      context.res = {
-        status: 401,
-        body: { error: "Non autenticato: Token mancante" },
       };
       return;
     }
@@ -87,7 +87,7 @@ module.exports = async function (context, req) {
       .input("expense_id", sql.Int, expense_id)
       .input("user_id", sql.NVarChar, user_id)
       .query(
-        "DELETE FROM group_expense_shares WHERE expense_id = @expense_id AND user_id = @user_id"
+        "DELETE FROM group_expense_shares WHERE expense_id = @expense_id AND user_id = @user_id",
       );
 
     context.res = {

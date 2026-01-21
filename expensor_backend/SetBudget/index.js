@@ -28,9 +28,27 @@ module.exports = async function (context, req) {
   try {
     const cookies = parseCookies(req);
     const token = cookies["auth_token"];
-    if (!token) throw new Error("No token");
-    const decoded = jwt.decode(token);
-    const userId = decoded.oid;
+
+    if (!token) {
+      context.res = {
+        status: 401,
+
+        body: { error: "Non autenticato." },
+      };
+      return;
+    }
+
+    const decodedToken = jwt.decode(token);
+    if (!decodedToken || !decodedToken.oid) {
+      context.res = {
+        status: 401,
+
+        body: { error: "Token non valido." },
+      };
+      return;
+    }
+
+    const userId = decodedToken.oid;
 
     const { monthly_limit } = req.body;
 
