@@ -21,10 +21,29 @@ const jwt = require("jsonwebtoken");
  */
 module.exports = async function (context, req) {
   try {
-    const cookies = parseCookies(req);
+
+      const cookies = parseCookies(req);
     const token = cookies["auth_token"];
-    if (!token) throw new Error("No token");
-    const userId = jwt.decode(token).oid;
+
+    if (!token) {
+      context.res = {
+        status: 401,
+
+        body: { error: "Non autenticato." },
+      };
+      return;
+    }
+    const decoded = jwt.decode(token);
+    if (!decoded) {
+      context.res = {
+        status: 401,
+
+        body: { error: "Sessione non valida." },
+      };
+      return;
+    }
+
+    const userId = decoded.oid;
 
     const pool = await connectDB();
     
