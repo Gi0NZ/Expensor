@@ -679,7 +679,6 @@ export async function getUserInfo(microsoft_id) {
  * @returns {Promise<object>} URL della nuova immagine.
  */
 export async function uploadProfileImage(formData) {
-  const token = sessionStorage.getItem("accessToken");
   const response = await fetch(`${API_BASE_URL}/UploadProfileImage`, {
     method: "POST",
     credentials: "include",
